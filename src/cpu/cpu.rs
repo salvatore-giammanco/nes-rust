@@ -34,16 +34,32 @@ impl CPU {
                     return;
                 }
                 0xA9 => {
-                    // Load Accumulator - Addressing Mode: Immediate
+                    // LDA - Load Accumulator - Addressing Mode: Immediate
                     let param = self.fetch(&program);
                     self.program_counter += 1;
                     self.register_accumulator = param;
+                    
                     if self.register_accumulator == 0 {
                         self.status = self.status | 0b0000_0010; // Set C flag
                     } else {
                         self.status = self.status & 0b1111_1101; // Unset C flag
                     }
                     if self.register_accumulator & 0b1000_0000 != 0b00 {
+                        self.status = self.status | 0b1000_0000; // Set N flag
+                    } else {
+                        self.status = self.status & 0b0111_1111; // Unset N flag
+                    }
+                },
+                0xAA => {
+                    // TAX - Transfer Accumulator to register X
+                    self.index_register_x = self.register_accumulator;
+                    
+                    if self.index_register_x == 0 {
+                        self.status = self.status | 0b0000_0010; // Set C flag
+                    } else {
+                        self.status = self.status & 0b1111_1101; // Unset C flag
+                    }
+                    if self.index_register_x & 0b1000_0000 != 0b00 {
                         self.status = self.status | 0b1000_0000; // Set N flag
                     } else {
                         self.status = self.status & 0b0111_1111; // Unset N flag
@@ -79,6 +95,13 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.execute(vec![0xA9, 0x00, 0x00]);
         assert_eq!(cpu.status & 0b0000_0010, 0b10);
+    }
+
+    #[test]
+    fn test_0xaa_tax_immediate_load() {
+        let mut cpu = CPU::new();
+        cpu.execute(vec![0xA9, 0x42, 0xAA, 0x00]);
+        assert_eq!(cpu.index_register_x, 0x42);
     }
 
     #[test]
