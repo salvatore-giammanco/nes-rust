@@ -100,7 +100,8 @@ mod tests {
     #[test]
     fn test_0xaa_tax_immediate_load() {
         let mut cpu = CPU::new();
-        cpu.execute(vec![0xA9, 0x42, 0xAA, 0x00]);
+        cpu.register_accumulator = 0x42;
+        cpu.execute(vec![0xAA, 0x00]);
         assert_eq!(cpu.index_register_x, 0x42);
     }
 
