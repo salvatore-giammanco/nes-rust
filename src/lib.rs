@@ -13,6 +13,5 @@ pub struct NES {
     rom: ROM,
     ppu: PPU,
     pad: PAD,
-    apu: APU
+    apu: APU,
 }
-

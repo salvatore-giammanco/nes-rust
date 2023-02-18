@@ -8,9 +8,9 @@ pub struct CPU {
 }
 
 impl CPU {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            program_counter:0,
+            program_counter: 0,
             stack_pointer: 0,
             register_accumulator: 0,
             index_register_x: 0,
@@ -18,22 +18,23 @@ impl CPU {
             status: 0,
         }
     }
-    
-    fn fetch(&self, program: &Vec<u8>) -> u8 {
+
+    pub fn fetch(&self, program: &Vec<u8>) -> u8 {
         program[self.program_counter as usize]
     }
 
-    fn execute(&mut self, program: Vec<u8>) {
+    pub fn execute(&mut self, program: Vec<u8>) {
         self.program_counter = 0;
         loop {
             let opcode = self.fetch(&program);
             self.program_counter += 1;
-            
+
             match opcode {
                 0x00 => {
                     return;
-                },
-                0xA9 => { // Load Accumulator - Addressing Mode: Immediate
+                }
+                0xA9 => {
+                    // Load Accumulator - Addressing Mode: Immediate
                     let param = self.fetch(&program);
                     self.program_counter += 1;
                     self.register_accumulator = param;
@@ -47,8 +48,8 @@ impl CPU {
                     } else {
                         self.status = self.status & 0b0111_1111; // Unset N flag
                     }
-                },
-                _ => todo!()
+                }
+                _ => todo!(),
             }
         }
     }
@@ -59,7 +60,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_0xA9_LDA_immediate_load() {
+    fn test_0xa9_lda_immediate_load() {
         let mut cpu = CPU::new();
         cpu.execute(vec![0xA9, 0x42, 0x00]);
         assert_eq!(cpu.register_accumulator, 0x42);
@@ -67,7 +68,7 @@ mod tests {
     }
 
     #[test]
-    fn test_0xA9_LDA_zero_flag() {
+    fn test_0xa9_lda_zero_flag() {
         let mut cpu = CPU::new();
         cpu.execute(vec![0xA9, 0x00, 0x00]);
         assert_eq!(cpu.status & 0b0000_0010, 0b10);
@@ -75,6 +76,6 @@ mod tests {
 
     #[test]
     fn test() {
-        assert_eq!(1,1);
+        assert_eq!(1, 1);
     }
 }
