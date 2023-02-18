@@ -38,12 +38,12 @@ impl CPU {
                     let param = self.fetch(&program);
                     self.program_counter += 1;
                     self.register_accumulator = param;
-                    if param == 0 {
+                    if self.register_accumulator == 0 {
                         self.status = self.status | 0b0000_0010; // Set C flag
                     } else {
                         self.status = self.status & 0b1111_1101; // Unset C flag
                     }
-                    if self.register_accumulator & 0b1000_0000 != 0 {
+                    if self.register_accumulator & 0b1000_0000 != 0b00 {
                         self.status = self.status | 0b1000_0000; // Set N flag
                     } else {
                         self.status = self.status & 0b0111_1111; // Unset N flag
@@ -65,6 +65,13 @@ mod tests {
         cpu.execute(vec![0xA9, 0x42, 0x00]);
         assert_eq!(cpu.register_accumulator, 0x42);
         assert_eq!(cpu.status & 0b0000_0010, 0);
+    }
+
+    #[test]
+    fn test_0xa9_lda_immediate_negative_flag() {
+        let mut cpu = CPU::new();
+        cpu.execute(vec![0xA9, 0xFF, 0x00]);
+        assert_eq!(cpu.status & 0b1000_0000, 0b1000_0000);
     }
 
     #[test]
