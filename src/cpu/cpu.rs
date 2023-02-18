@@ -38,13 +38,23 @@ impl CPU {
                     let param = self.fetch(&program);
                     self.program_counter += 1;
                     self.register_accumulator = param;
-                    
+
                     self.update_zero_and_negative_registers(self.register_accumulator);
-                },
+                }
                 0xAA => {
                     // TAX - Transfer Accumulator to register X
                     self.index_register_x = self.register_accumulator;
-                    
+
+                    self.update_zero_and_negative_registers(self.index_register_x);
+                }
+                0xE8 => {
+                    // INX - Increment register X
+                    if self.index_register_x == 0xFF {
+                        self.index_register_x = 0;
+                    } else {
+                        self.index_register_x += 1;
+                    }
+
                     self.update_zero_and_negative_registers(self.index_register_x);
                 }
                 _ => todo!(),
@@ -98,6 +108,23 @@ mod tests {
         cpu.register_accumulator = 0x42;
         cpu.execute(vec![0xAA, 0x00]);
         assert_eq!(cpu.index_register_x, 0x42);
+    }
+
+    #[test]
+    fn test_5_ops_working_together() {
+        let mut cpu = CPU::new();
+        cpu.execute(vec![0xA9, 0xC0, 0xAA, 0xE8, 0x00]);
+
+        assert_eq!(cpu.index_register_x, 0xC1)
+    }
+
+    #[test]
+    fn test_inx_overflow() {
+        let mut cpu = CPU::new();
+        cpu.index_register_x = 0xFF;
+        cpu.execute(vec![0xE8, 0xE8, 0x00]);
+
+        assert_eq!(cpu.index_register_x, 1)
     }
 
     #[test]
