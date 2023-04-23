@@ -1,10 +1,11 @@
 pub struct CPU {
-    program_counter: u16,
-    stack_pointer: u8,
-    register_accumulator: u8,
-    index_register_x: u8,
-    index_register_y: u8,
-    status: u8,
+    pub program_counter: u16,
+    pub stack_pointer: u8,
+    pub register_accumulator: u8,
+    pub index_register_x: u8,
+    pub index_register_y: u8,
+    pub status: u8,
+    memory: [u8; 0xFFFF],
 }
 
 impl CPU {
@@ -16,17 +17,60 @@ impl CPU {
             index_register_x: 0,
             index_register_y: 0,
             status: 0,
+            memory: [0; 0xFFFF],
         }
     }
 
-    pub fn fetch(&self, program: &Vec<u8>) -> u8 {
-        program[self.program_counter as usize]
+    pub fn load_program(&mut self, program: Vec<u8>) {
+        // TODO check the length of the program
+        self.memory[0x8000..(0x8000 + program.len())].copy_from_slice(&program[..]);
+        self.write_mem_2_bytes(0xFFFC, 0x8000);
     }
 
-    pub fn execute(&mut self, program: Vec<u8>) {
-        self.program_counter = 0;
+    pub fn reset(&mut self) {
+        self.program_counter = self.read_mem_2_bytes(0xFFFC); // Address at 0xFFFC 2 bytes little endian
+        self.stack_pointer = 0;
+        self.register_accumulator = 0;
+        self.index_register_x = 0;
+        self.index_register_y = 0;
+        self.status = 0;
+    }
+
+    pub fn load_and_execute(&mut self, program: Vec<u8>) {
+        self.load_program(program);
+        self.reset();
+        self.execute();
+    }
+
+    fn read_mem(&self, addr: u16) -> u8 {
+        self.memory[addr as usize]
+    }
+
+    pub fn read_mem_2_bytes(&self, addr: u16) -> u16 {
+        // Reading 2 bytes in little endian
+        let little = self.read_mem(addr) as u16;
+        let big = self.read_mem(addr + 1) as u16;
+        big << 8 | little as u16
+    }
+
+    fn write_mem(&mut self, addr: u16, value: u8) {
+        self.memory[addr as usize] = value;
+    }
+
+    fn write_mem_2_bytes(&mut self, addr: u16, value: u16) {
+        let little = (value << 8) as u8;
+        let big = (value >> 8) as u8;
+        self.write_mem(addr, little);
+        self.write_mem(addr + 1, big);
+    }
+
+    pub fn fetch(&self) -> u8 {
+        self.memory[self.program_counter as usize]
+    }
+
+    pub fn execute(&mut self) {
         loop {
-            let opcode = self.fetch(&program);
+            let opcode = self.fetch();
             self.program_counter += 1;
 
             match opcode {
@@ -35,7 +79,7 @@ impl CPU {
                 }
                 0xA9 => {
                     // LDA - Load Accumulator - Addressing Mode: Immediate
-                    let param = self.fetch(&program);
+                    let param = self.fetch();
                     self.program_counter += 1;
                     self.register_accumulator = param;
 
@@ -83,7 +127,7 @@ mod tests {
     #[test]
     fn test_0xa9_lda_immediate_load() {
         let mut cpu = CPU::new();
-        cpu.execute(vec![0xA9, 0x42, 0x00]);
+        cpu.load_and_execute(vec![0xA9, 0x42, 0x00]);
         assert_eq!(cpu.register_accumulator, 0x42);
         assert_eq!(cpu.status & 0b0000_0010, 0);
     }
@@ -91,14 +135,14 @@ mod tests {
     #[test]
     fn test_0xa9_lda_immediate_negative_flag() {
         let mut cpu = CPU::new();
-        cpu.execute(vec![0xA9, 0xFF, 0x00]);
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0x00]);
         assert_eq!(cpu.status & 0b1000_0000, 0b1000_0000);
     }
 
     #[test]
     fn test_0xa9_lda_zero_flag() {
         let mut cpu = CPU::new();
-        cpu.execute(vec![0xA9, 0x00, 0x00]);
+        cpu.load_and_execute(vec![0xA9, 0x00, 0x00]);
         assert_eq!(cpu.status & 0b0000_0010, 0b10);
     }
 
@@ -106,14 +150,14 @@ mod tests {
     fn test_0xaa_tax_immediate_load() {
         let mut cpu = CPU::new();
         cpu.register_accumulator = 0x42;
-        cpu.execute(vec![0xAA, 0x00]);
+        cpu.load_and_execute(vec![0xAA, 0x00]);
         assert_eq!(cpu.index_register_x, 0x42);
     }
 
     #[test]
     fn test_5_ops_working_together() {
         let mut cpu = CPU::new();
-        cpu.execute(vec![0xA9, 0xC0, 0xAA, 0xE8, 0x00]);
+        cpu.load_and_execute(vec![0xA9, 0xC0, 0xAA, 0xE8, 0x00]);
 
         assert_eq!(cpu.index_register_x, 0xC1)
     }
@@ -122,13 +166,8 @@ mod tests {
     fn test_inx_overflow() {
         let mut cpu = CPU::new();
         cpu.index_register_x = 0xFF;
-        cpu.execute(vec![0xE8, 0xE8, 0x00]);
+        cpu.load_and_execute(vec![0xE8, 0xE8, 0x00]);
 
         assert_eq!(cpu.index_register_x, 1)
-    }
-
-    #[test]
-    fn test() {
-        assert_eq!(1, 1);
     }
 }
