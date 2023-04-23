@@ -24,11 +24,11 @@ impl CPU {
     pub fn load_program(&mut self, program: Vec<u8>) {
         // TODO check the length of the program
         self.memory[0x8000..(0x8000 + program.len())].copy_from_slice(&program[..]);
-        self.write_mem_2_bytes(0xFFFC, 0x8000);
+        self.write_mem_u16(0xFFFC, 0x8000);
     }
 
     pub fn reset(&mut self) {
-        self.program_counter = self.read_mem_2_bytes(0xFFFC); // Address at 0xFFFC 2 bytes little endian
+        self.program_counter = self.read_mem_u16(0xFFFC); // Address at 0xFFFC 2 bytes little endian
         self.stack_pointer = 0;
         self.register_accumulator = 0;
         self.index_register_x = 0;
@@ -46,7 +46,7 @@ impl CPU {
         self.memory[addr as usize]
     }
 
-    pub fn read_mem_2_bytes(&self, addr: u16) -> u16 {
+    pub fn read_mem_u16(&self, addr: u16) -> u16 {
         // Reading 2 bytes in little endian
         let little = self.read_mem(addr) as u16;
         let big = self.read_mem(addr + 1) as u16;
@@ -57,8 +57,8 @@ impl CPU {
         self.memory[addr as usize] = value;
     }
 
-    fn write_mem_2_bytes(&mut self, addr: u16, value: u16) {
-        let little = (value << 8) as u8;
+    fn write_mem_u16(&mut self, addr: u16, value: u16) {
+        let little = (value & 0xff) as u8;
         let big = (value >> 8) as u8;
         self.write_mem(addr, little);
         self.write_mem(addr + 1, big);
@@ -149,8 +149,7 @@ mod tests {
     #[test]
     fn test_0xaa_tax_immediate_load() {
         let mut cpu = CPU::new();
-        cpu.register_accumulator = 0x42;
-        cpu.load_and_execute(vec![0xAA, 0x00]);
+        cpu.load_and_execute(vec![0xA9, 0x42, 0xAA, 0x00]);
         assert_eq!(cpu.index_register_x, 0x42);
     }
 
@@ -165,8 +164,7 @@ mod tests {
     #[test]
     fn test_inx_overflow() {
         let mut cpu = CPU::new();
-        cpu.index_register_x = 0xFF;
-        cpu.load_and_execute(vec![0xE8, 0xE8, 0x00]);
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0xAA, 0xE8, 0xE8, 0x00]);
 
         assert_eq!(cpu.index_register_x, 1)
     }
