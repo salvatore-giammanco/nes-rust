@@ -48,9 +48,9 @@ impl CPU {
 
     pub fn read_mem_u16(&self, addr: u16) -> u16 {
         // Reading 2 bytes in little endian
-        let little = self.read_mem(addr) as u16;
-        let big = self.read_mem(addr + 1) as u16;
-        big << 8 | little as u16
+        let little = self.read_mem(addr);
+        let big = self.read_mem(addr + 1);
+        u16::from_le_bytes([little, big])
     }
 
     fn write_mem(&mut self, addr: u16, value: u8) {
@@ -58,10 +58,10 @@ impl CPU {
     }
 
     fn write_mem_u16(&mut self, addr: u16, value: u16) {
-        let little = (value & 0xff) as u8;
-        let big = (value >> 8) as u8;
-        self.write_mem(addr, little);
-        self.write_mem(addr + 1, big);
+        let bytes = u16::to_le_bytes(value);
+        for i in 0..bytes.len() {
+            self.write_mem(addr + i as u16, bytes[i])
+        }
     }
 
     pub fn fetch(&self) -> u8 {
