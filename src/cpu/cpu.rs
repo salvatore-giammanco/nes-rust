@@ -133,6 +133,11 @@ impl CPU {
         self.update_zero_and_negative_registers(self.register_accumulator);
     }
 
+    pub fn sta(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.write_mem(addr, self.register_accumulator);
+    }
+
     pub fn execute(&mut self) {
         loop {
             let opcode = self.fetch();
@@ -180,6 +185,41 @@ impl CPU {
                 0xB1 => {
                     // LDA - Load Accumulator - Addressing Mode: (Indirect),Y
                     self.lda(&AddressingMode::Indirect_Y);
+                    self.program_counter += 1;
+                },
+                0x85 => {
+                    // STA - Store Accumulator - Addressing Mode: Zero Page
+                    self.sta(&AddressingMode::ZeroPage);
+                    self.program_counter += 1;
+                },
+                0x95 => {
+                    // STA - Store Accumulator - Addressing Mode: Zero Page,X
+                    self.sta(&AddressingMode::ZeroPage_X);
+                    self.program_counter += 1;
+                },
+                0x8D => {
+                    // STA - Store Accumulator - Addressing Mode: Absolute
+                    self.sta(&AddressingMode::Absolute);
+                    self.program_counter += 1;
+                },
+                0x9D => {
+                    // STA - Store Accumulator - Addressing Mode: Absolute,X
+                    self.sta(&AddressingMode::Absolute_X);
+                    self.program_counter += 1;
+                },
+                0x99 => {
+                    // STA - Store Accumulator - Addressing Mode: Absolute,Y
+                    self.sta(&AddressingMode::Absolute_Y);
+                    self.program_counter += 1;
+                },
+                0x81 => {
+                    // STA - Store Accumulator - Addressing Mode: (Indirect,X)
+                    self.sta(&AddressingMode::Indirect_X);
+                    self.program_counter += 1;
+                },
+                0x91 => {
+                    // STA - Store Accumulator - Addressing Mode: (Indirect),Y
+                    self.sta(&AddressingMode::Indirect_Y);
                     self.program_counter += 1;
                 },
                 0xAA => {
@@ -273,5 +313,10 @@ mod tests {
         cpu.load_and_execute(vec![0xa5, 0x10, 0x00]);
  
         assert_eq!(cpu.register_accumulator, 0x55);
+    }
+
+    #[test]
+    fn test_get_operand_address() {
+        // TODO: Test
     }
 }
