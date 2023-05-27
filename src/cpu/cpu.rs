@@ -316,7 +316,18 @@ mod tests {
     }
 
     #[test]
-    fn test_get_operand_address() {
-        // TODO: Test
+    fn test_sta() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xa9, 0x42, 0x85, 0x10]);
+        assert_eq!(cpu.read_mem(0x10), 0x42);
+    }
+
+    #[test]
+    fn test_get_operand_address_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load_program(vec![0x10]);
+        cpu.reset();
+        let addr = cpu.get_operand_address(&AddressingMode::ZeroPage);
+        assert_eq!(addr, 0x10);
     }
 }
