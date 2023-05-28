@@ -1,5 +1,9 @@
-use crate::cpu::cpu::CPU;
+#[macro_use]
+extern crate lazy_static;
+
+use crate::cpu::CPU;
 pub mod cpu;
+pub mod opcodes;
 
 struct BUS {}
 struct ROM {}
