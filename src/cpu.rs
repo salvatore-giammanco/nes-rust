@@ -159,33 +159,12 @@ impl CPU {
                 },
                 "LDA" => {
                     // Load Accumulator
-                    let addr_mode: AddressingMode = match code {
-                        0xA9 => AddressingMode::Immediate,
-                        0xA5 => AddressingMode::ZeroPage,
-                        0xB5 => AddressingMode::ZeroPage_X,
-                        0xAD => AddressingMode::Absolute,
-                        0xBD => AddressingMode::Absolute_X,
-                        0xB9 => AddressingMode::Absolute_Y,
-                        0xA1 => AddressingMode::Indirect_X,
-                        0xB1 => AddressingMode::Indirect_Y,
-                        _ => AddressingMode::NoneAddressing
-                    };
-                    self.lda(&addr_mode);
+                    self.lda(&opcode.addressing_mode);
                     self.program_counter += opcode.cycles - 1;
                 },
                 "STA" => {
                     // Store Accumulator
-                    let addr_mode: AddressingMode = match code {
-                        0x85 => AddressingMode::ZeroPage,
-                        0x95 => AddressingMode::ZeroPage_X,
-                        0x8D => AddressingMode::Absolute,
-                        0x9D => AddressingMode::Absolute_X,
-                        0x99 => AddressingMode::Absolute_Y,
-                        0x81 => AddressingMode::Indirect_X,
-                        0x91 => AddressingMode::Indirect_Y,
-                        _ => AddressingMode::NoneAddressing
-                    };
-                    self.sta(&addr_mode);
+                    self.sta(&opcode.addressing_mode);
                     self.program_counter += opcode.cycles - 1;
                 },
                 "TAX" => {
@@ -209,11 +188,13 @@ impl CPU {
         }
     }
 
+    fn update_carry_flag(&mut self,) {}
+
     fn update_zero_and_negative_registers(&mut self, value: u8) {
         if value == 0 {
-            self.status = self.status | 0b0000_0010; // Set C flag
+            self.status = self.status | 0b0000_0010; // Set Z flag
         } else {
-            self.status = self.status & 0b1111_1101; // Unset C flag
+            self.status = self.status & 0b1111_1101; // Unset Z flag
         }
         if value & 0b1000_0000 != 0b00 {
             self.status = self.status | 0b1000_0000; // Set N flag
