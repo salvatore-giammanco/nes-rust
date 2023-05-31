@@ -6,28 +6,28 @@ pub struct OpCode {
     pub label: &'static str,
     pub bytes: u8,
     pub cycles: u16,
-    pub addressing_mode: AddressingMode
+    pub addressing_mode: AddressingMode,
 }
 
 impl OpCode {
     fn new(
-        opcode: u8, 
+        opcode: u8,
         label: &'static str,
         bytes: u8,
         cycles: u16,
-        addressing_mode: AddressingMode
+        addressing_mode: AddressingMode,
     ) -> Self {
         Self {
             opcode,
             label,
             bytes,
             cycles,
-            addressing_mode
+            addressing_mode,
         }
     }
 }
 
-lazy_static!{
+lazy_static! {
     pub static ref CPU_OPCODES: Vec<OpCode> = vec![
         OpCode::new(0x00, "BRK", 1, 7, AddressingMode::NoneAddressing),
         OpCode::new(0xAA, "TAX", 1, 2, AddressingMode::NoneAddressing),

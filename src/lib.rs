@@ -4,6 +4,7 @@ extern crate lazy_static;
 use crate::cpu::CPU;
 pub mod cpu;
 pub mod opcodes;
+mod status_flags;
 
 struct BUS {}
 struct ROM {}

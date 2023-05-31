@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use crate::opcodes::{OpCode, OpCodeNotFound, self};
-
-
+use crate::opcodes::{self, OpCode, OpCodeNotFound};
+use crate::status_flags::ProcessorStatus;
 
 pub struct CPU {
     pub program_counter: u16,
@@ -10,23 +9,23 @@ pub struct CPU {
     pub register_accumulator: u8,
     pub index_register_x: u8,
     pub index_register_y: u8,
-    pub status: u8,
+    pub status: ProcessorStatus,
     memory: [u8; 0xFFFF],
 }
 
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
 pub enum AddressingMode {
-   Immediate,
-   ZeroPage,
-   ZeroPage_X,
-   ZeroPage_Y,
-   Absolute,
-   Absolute_X,
-   Absolute_Y,
-   Indirect_X,
-   Indirect_Y,
-   NoneAddressing,
+    Immediate,
+    ZeroPage,
+    ZeroPage_X,
+    ZeroPage_Y,
+    Absolute,
+    Absolute_X,
+    Absolute_Y,
+    Indirect_X,
+    Indirect_Y,
+    NoneAddressing,
 }
 
 impl CPU {
@@ -37,7 +36,7 @@ impl CPU {
             register_accumulator: 0,
             index_register_x: 0,
             index_register_y: 0,
-            status: 0,
+            status: ProcessorStatus::new(),
             memory: [0; 0xFFFF],
         }
     }
@@ -54,7 +53,7 @@ impl CPU {
         self.register_accumulator = 0;
         self.index_register_x = 0;
         self.index_register_y = 0;
-        self.status = 0;
+        self.status = ProcessorStatus::new();
     }
 
     pub fn load_and_execute(&mut self, program: Vec<u8>) {
@@ -96,36 +95,35 @@ impl CPU {
             AddressingMode::ZeroPage_X => {
                 let param = self.read_mem(self.program_counter);
                 self.index_register_x.wrapping_add(param) as u16
-            },
+            }
             AddressingMode::ZeroPage_Y => {
                 let param = self.read_mem(self.program_counter);
                 self.index_register_y.wrapping_add(param) as u16
-            },
+            }
             AddressingMode::Absolute => self.read_mem_u16(self.program_counter),
             AddressingMode::Absolute_X => {
                 let param = self.read_mem_u16(self.program_counter);
-                param.wrapping_add(self.index_register_x  as u16)
-            },
+                param.wrapping_add(self.index_register_x as u16)
+            }
             AddressingMode::Absolute_Y => {
                 let param = self.read_mem_u16(self.program_counter);
-                param.wrapping_add(self.index_register_y  as u16)
-            },
+                param.wrapping_add(self.index_register_y as u16)
+            }
             AddressingMode::Indirect_X => {
                 let param = self.read_mem(self.program_counter);
                 let ptr: u8 = param.wrapping_add(self.index_register_x);
                 let little: u8 = self.read_mem(ptr as u16);
                 let big: u8 = self.read_mem(ptr.wrapping_add(1) as u16);
                 u16::from_le_bytes([little, big])
-            },
+            }
             AddressingMode::Indirect_Y => {
                 let param = self.read_mem(self.program_counter);
                 let little: u8 = self.read_mem(param as u16);
                 let big: u8 = self.read_mem(param.wrapping_add(1) as u16);
                 let deref_base: u16 = u16::from_le_bytes([little, big]);
                 deref_base.wrapping_add(self.index_register_y as u16)
-
-            },
-            _ => {               
+            }
+            _ => {
                 panic!("mode {:?} is not supported", mode);
             }
         }
@@ -136,7 +134,8 @@ impl CPU {
         let value = self.read_mem(addr);
 
         self.register_accumulator = value;
-        self.update_zero_and_negative_registers(self.register_accumulator);
+        self.status
+            .update_zero_and_negative_registers(self.register_accumulator);
     }
 
     pub fn sta(&mut self, mode: &AddressingMode) {
@@ -150,28 +149,31 @@ impl CPU {
             let code = self.fetch();
             self.program_counter += 1;
 
-            let opcode = opcodes.get(&code).expect(&format!("Unknown opcode {:x}", code));
+            let opcode = opcodes
+                .get(&code)
+                .expect(&format!("Unknown opcode {:x}", code));
 
             match opcode.label {
                 "BRK" => {
                     // Beak
                     return;
-                },
+                }
                 "LDA" => {
                     // Load Accumulator
                     self.lda(&opcode.addressing_mode);
                     self.program_counter += opcode.cycles - 1;
-                },
+                }
                 "STA" => {
                     // Store Accumulator
                     self.sta(&opcode.addressing_mode);
                     self.program_counter += opcode.cycles - 1;
-                },
+                }
                 "TAX" => {
                     // TAX - Transfer Accumulator to register X
                     self.index_register_x = self.register_accumulator;
 
-                    self.update_zero_and_negative_registers(self.index_register_x);
+                    self.status
+                        .update_zero_and_negative_registers(self.index_register_x);
                 }
                 "INX" => {
                     // INX - Increment register X
@@ -181,25 +183,11 @@ impl CPU {
                         self.index_register_x += 1;
                     }
 
-                    self.update_zero_and_negative_registers(self.index_register_x);
+                    self.status
+                        .update_zero_and_negative_registers(self.index_register_x);
                 }
                 _ => todo!(),
             }
-        }
-    }
-
-    fn update_carry_flag(&mut self,) {}
-
-    fn update_zero_and_negative_registers(&mut self, value: u8) {
-        if value == 0 {
-            self.status = self.status | 0b0000_0010; // Set Z flag
-        } else {
-            self.status = self.status & 0b1111_1101; // Unset Z flag
-        }
-        if value & 0b1000_0000 != 0b00 {
-            self.status = self.status | 0b1000_0000; // Set N flag
-        } else {
-            self.status = self.status & 0b0111_1111; // Unset N flag
         }
     }
 }
@@ -213,21 +201,21 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0x42, 0x00]);
         assert_eq!(cpu.register_accumulator, 0x42);
-        assert_eq!(cpu.status & 0b0000_0010, 0);
+        assert_eq!(cpu.status.status & 0b0000_0010, 0);
     }
 
     #[test]
     fn test_0xa9_lda_immediate_negative_flag() {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0xFF, 0x00]);
-        assert_eq!(cpu.status & 0b1000_0000, 0b1000_0000);
+        assert_eq!(cpu.status.status & 0b1000_0000, 0b1000_0000);
     }
 
     #[test]
     fn test_0xa9_lda_zero_flag() {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0x00, 0x00]);
-        assert_eq!(cpu.status & 0b0000_0010, 0b10);
+        assert_eq!(cpu.status.status & 0b0000_0010, 0b10);
     }
 
     #[test]
@@ -258,7 +246,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.write_mem(0x10, 0x55);
         cpu.load_and_execute(vec![0xa5, 0x10, 0x00]);
- 
+
         assert_eq!(cpu.register_accumulator, 0x55);
     }
 
