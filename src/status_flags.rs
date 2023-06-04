@@ -29,7 +29,7 @@ impl ProcessorStatus {
             },
             StatusFlag::Zero => FlagMask {
                 set: 0b0000_0010,
-                unset: 0b0000_0010,
+                unset: 0b1111_1101,
             },
             StatusFlag::InterruptDisable => FlagMask {
                 set: 0b0000_0100,
@@ -50,7 +50,7 @@ impl ProcessorStatus {
         }
     }
 
-    fn set_flag(&mut self, flag: StatusFlag, bit: bool) {
+    pub fn set_flag(&mut self, flag: StatusFlag, bit: bool) {
         match bit {
             true => self.status = self.status | self.get_mask(flag).set,
             false => self.status = self.status & self.get_mask(flag).unset,
