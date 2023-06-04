@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::opcodes::{self, OpCode, OpCodeNotFound};
-use crate::status_flags::ProcessorStatus;
+use crate::opcodes::{self, OpCode};
+use crate::status_flags::{ProcessorStatus, StatusFlag};
 
 pub struct CPU {
     pub program_counter: u16,
@@ -143,6 +143,33 @@ impl CPU {
         self.write_mem(addr, self.register_accumulator);
     }
 
+    pub fn add_width_carry(&mut self, value: u8) {
+        let carry: u16 = if self.status.status & 0b0000_0001 != 0b00 {
+            1
+        } else {
+            0
+        };
+        let result: u16 = self.register_accumulator as u16 + value as u16 + carry;
+
+        let carry: bool = if result > 0xFF { true } else { false };
+        let result: u8 = result as u8;
+
+        self.status.set_flag(StatusFlag::Carry, carry);
+
+        let overflow: bool = (value ^ result) & (result ^ self.register_accumulator) & 0x80 != 0;
+        self.status.set_flag(StatusFlag::Overflow, overflow);
+        self.register_accumulator = result;
+    }
+
+    pub fn adc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.read_mem(addr);
+
+        self.add_width_carry(value);
+        self.status
+            .update_zero_and_negative_registers(self.register_accumulator);
+    }
+
     pub fn execute(&mut self) {
         let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
         loop {
@@ -169,14 +196,14 @@ impl CPU {
                     self.program_counter += opcode.cycles - 1;
                 }
                 "TAX" => {
-                    // TAX - Transfer Accumulator to register X
+                    // Transfer Accumulator to register X
                     self.index_register_x = self.register_accumulator;
 
                     self.status
                         .update_zero_and_negative_registers(self.index_register_x);
                 }
                 "INX" => {
-                    // INX - Increment register X
+                    // Increment register X
                     if self.index_register_x == 0xFF {
                         self.index_register_x = 0;
                     } else {
@@ -185,6 +212,11 @@ impl CPU {
 
                     self.status
                         .update_zero_and_negative_registers(self.index_register_x);
+                }
+                "ADC" => {
+                    // Add with carry
+                    self.adc(&opcode.addressing_mode);
+                    self.program_counter += opcode.cycles - 1;
                 }
                 _ => todo!(),
             }
@@ -255,6 +287,37 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xa9, 0x42, 0x85, 0x10]);
         assert_eq!(cpu.read_mem(0x10), 0x42);
+    }
+
+    #[test]
+    fn test_adc() {
+        let mut cpu = CPU::new();
+        cpu.write_mem(0x10, 0x55);
+        // Immediate
+        cpu.load_and_execute(vec![0xA9, 0x55, 0x69, 0x10]);
+        assert_eq!(cpu.register_accumulator, 0x65);
+        // Zero Page
+        cpu.load_and_execute(vec![0xA9, 0x55, 0x65, 0x10]);
+        assert_eq!(cpu.register_accumulator, 0xAA);
+    }
+
+    #[test]
+    fn test_adc_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10]);
+        assert_eq!(cpu.register_accumulator, 0x0F);
+        assert_eq!(cpu.status.status & 0b0100_0000, 0);
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10, 0x69, 0x10]);
+        assert_eq!(cpu.register_accumulator, 0x20);
+        assert_eq!(cpu.status.status & 0b0100_0000, 0); // Overflow is 0
+    }
+
+    #[test]
+    fn test_adc_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0x50, 0x69, 0x50]);
+        assert_eq!(cpu.register_accumulator, 0xA0);
+        assert_eq!(cpu.status.status & 0b0100_0000, 0b0100_0000); // Overflow is 1
     }
 
     #[test]
