@@ -55,6 +55,7 @@ lazy_static! {
         OpCode::new(0x79, "ADC", 3, 4 /* +1 if page is crossed */, AddressingMode::Absolute_Y),
         OpCode::new(0x61, "ADC", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0x71, "ADC", 2, 5 /* +1 if page is crossed */, AddressingMode::Indirect_Y),
+        OpCode::new(0xE9, "SBC", 2, 2, AddressingMode::Immediate),
     ];
 
     pub static ref CPU_OPCODES_MAP: HashMap<u8, &'static OpCode> = {

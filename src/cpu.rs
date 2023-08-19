@@ -170,6 +170,15 @@ impl CPU {
             .update_zero_and_negative_registers(self.register_accumulator);
     }
 
+    pub fn sbc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.read_mem(addr);
+
+        self.add_width_carry(((value as i8).wrapping_neg().wrapping_sub(1)) as u8);
+        self.status
+            .update_zero_and_negative_registers(self.register_accumulator);
+    }
+
     pub fn execute(&mut self) {
         let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
         loop {
@@ -216,6 +225,11 @@ impl CPU {
                 "ADC" => {
                     // Add with carry
                     self.adc(&opcode.addressing_mode);
+                    self.program_counter += opcode.cycles - 1;
+                },
+                "SBC" => {
+                    // Subtract with carry
+                    self.sbc(&opcode.addressing_mode);
                     self.program_counter += opcode.cycles - 1;
                 }
                 _ => todo!(),
@@ -294,7 +308,7 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.write_mem(0x10, 0x55);
         // Immediate
-        cpu.load_and_execute(vec![0xA9, 0x55, 0x69, 0x10]);
+        cpu.load_and_execute(vec![0xA9, 0x55, 0x69, 0x10]); // LDA 0x55, ADC 0x10
         assert_eq!(cpu.register_accumulator, 0x65);
         // Zero Page
         cpu.load_and_execute(vec![0xA9, 0x55, 0x65, 0x10]);
@@ -307,6 +321,7 @@ mod tests {
         cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10]);
         assert_eq!(cpu.register_accumulator, 0x0F);
         assert_eq!(cpu.status.status & 0b0100_0000, 0);
+        assert_eq!(cpu.status.status & 0b0000_0001, 1); // Carry is 1
         cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10, 0x69, 0x10]);
         assert_eq!(cpu.register_accumulator, 0x20);
         assert_eq!(cpu.status.status & 0b0100_0000, 0); // Overflow is 0
@@ -318,6 +333,25 @@ mod tests {
         cpu.load_and_execute(vec![0xA9, 0x50, 0x69, 0x50]);
         assert_eq!(cpu.register_accumulator, 0xA0);
         assert_eq!(cpu.status.status & 0b0100_0000, 0b0100_0000); // Overflow is 1
+    }
+
+    #[test]
+    fn test_sbc() {
+        let mut cpu = CPU::new();
+        cpu.write_mem(0x10, 0x55);
+        // Immediate
+        cpu.load_and_execute(vec![0xA9, 0x55, 0xE9, 0x10]); // LDA 0x55, SBC 0x10
+        assert_eq!(cpu.register_accumulator, 0x44);
+    }
+
+    #[test]
+    fn test_sbc_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0x00, 0xE9, 0x02]);
+        assert_eq!(cpu.register_accumulator, 0xFD);
+        cpu.load_and_execute(vec![0xE9, 0x02]);
+        assert_eq!(cpu.status.status & 0b0000_0001, 1); // Carry is 1
+        assert_eq!(cpu.register_accumulator, 0xFA);
     }
 
     #[test]
