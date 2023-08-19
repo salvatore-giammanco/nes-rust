@@ -129,13 +129,17 @@ impl CPU {
         }
     }
 
+    pub fn load_accumulator(&mut self, value: u8) {
+        self.register_accumulator = value;
+        self.status
+            .update_zero_and_negative_registers(self.register_accumulator);
+    }
+
     pub fn lda(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.read_mem(addr);
 
-        self.register_accumulator = value;
-        self.status
-            .update_zero_and_negative_registers(self.register_accumulator);
+        self.load_accumulator(value);
     }
 
     pub fn sta(&mut self, mode: &AddressingMode) {
@@ -158,7 +162,7 @@ impl CPU {
 
         let overflow: bool = (value ^ result) & (result ^ self.register_accumulator) & 0x80 != 0;
         self.status.set_flag(StatusFlag::Overflow, overflow);
-        self.register_accumulator = result;
+        self.load_accumulator(result);
     }
 
     pub fn adc(&mut self, mode: &AddressingMode) {
@@ -166,8 +170,6 @@ impl CPU {
         let value = self.read_mem(addr);
 
         self.add_width_carry(value);
-        self.status
-            .update_zero_and_negative_registers(self.register_accumulator);
     }
 
     pub fn sbc(&mut self, mode: &AddressingMode) {
@@ -175,8 +177,6 @@ impl CPU {
         let value = self.read_mem(addr);
 
         self.add_width_carry(((value as i8).wrapping_neg().wrapping_sub(1)) as u8);
-        self.status
-            .update_zero_and_negative_registers(self.register_accumulator);
     }
 
     pub fn execute(&mut self) {
@@ -226,7 +226,7 @@ impl CPU {
                     // Add with carry
                     self.adc(&opcode.addressing_mode);
                     self.program_counter += opcode.cycles - 1;
-                },
+                }
                 "SBC" => {
                     // Subtract with carry
                     self.sbc(&opcode.addressing_mode);
