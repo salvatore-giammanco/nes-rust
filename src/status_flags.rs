@@ -1,10 +1,12 @@
 pub enum StatusFlag {
-    Carry,            // Bit 7
-    Zero,             // Bit 6
-    InterruptDisable, // Bit 5
-    Decimal,          // Bit 4
-    Overflow,         // Bit 1
-    Negative,         // Bit 0
+    Carry,            // Bit 0
+    Zero,             // Bit 1
+    InterruptDisable, // Bit 2
+    Decimal,          // Bit 3
+    B,                // Bit 4
+                      // Bit 5 (always set to 1)
+    Overflow,         // Bit 6
+    Negative,         // Bit 7
 }
 
 pub struct FlagMask {
@@ -38,6 +40,10 @@ impl ProcessorStatus {
             StatusFlag::Decimal => FlagMask {
                 set: 0b0000_1000,
                 unset: 0b1111_0111,
+            },
+            StatusFlag::B => FlagMask {
+                set: 0b0001_0000,
+                unset: 0b1110_1111,
             },
             StatusFlag::Overflow => FlagMask {
                 set: 0b0100_0000,
