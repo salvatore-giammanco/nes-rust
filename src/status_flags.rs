@@ -20,7 +20,7 @@ pub struct ProcessorStatus {
 
 impl ProcessorStatus {
     pub fn new() -> Self {
-        Self { status: 0 }
+        Self { status: 0b0010_0000 }
     }
 
     fn get_mask(&self, flag: StatusFlag) -> FlagMask {
@@ -85,6 +85,6 @@ mod tests {
     fn test_set_flag() {
         let mut p = ProcessorStatus::new();
         p.set_flag(StatusFlag::Carry, true);
-        assert_eq!(p.status, 0b0000_0001);
+        assert_eq!(p.status, 0b0010_0001);
     }
 }

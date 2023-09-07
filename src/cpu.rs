@@ -3,6 +3,9 @@ use std::collections::HashMap;
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
 
+const STACK: u16 = 0x100;
+pub const STACK_RESET: u8 = 0xFF;
+
 pub struct CPU {
     pub program_counter: u16,
     pub stack_pointer: u8,
@@ -32,7 +35,7 @@ impl CPU {
     pub fn new() -> Self {
         Self {
             program_counter: 0,
-            stack_pointer: 0,
+            stack_pointer: STACK_RESET,
             register_accumulator: 0,
             index_register_x: 0,
             index_register_y: 0,
@@ -49,7 +52,7 @@ impl CPU {
 
     pub fn reset(&mut self) {
         self.program_counter = self.read_mem_u16(0xFFFC); // Address at 0xFFFC 2 bytes little endian
-        self.stack_pointer = 0;
+        self.stack_pointer = STACK_RESET;
         self.register_accumulator = 0;
         self.index_register_x = 0;
         self.index_register_y = 0;
@@ -86,6 +89,16 @@ impl CPU {
 
     pub fn fetch(&self) -> u8 {
         self.memory[self.program_counter as usize]
+    }
+
+    pub fn push(&mut self, value: u8) -> bool {
+        if self.stack_pointer > 0 {
+            let pointer: u16 = STACK + self.stack_pointer as u16;
+            self.write_mem(pointer, value);
+            self.stack_pointer -= 1;
+            return true;
+        }
+        false
     }
 
     pub fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
@@ -191,8 +204,15 @@ impl CPU {
 
             match opcode.label {
                 "BRK" => {
-                    // Beak
+                    // Break
                     return;
+                }
+                "PHP" => {
+                    // Push Processor Status
+                    self.status.set_flag(StatusFlag::B, true);
+                    if !self.push(self.status.status) {
+                        panic!("Stack overflow");
+                    }
                 }
                 "LDA" => {
                     // Load Accumulator
@@ -361,5 +381,12 @@ mod tests {
         cpu.reset();
         let addr = cpu.get_operand_address(&AddressingMode::ZeroPage);
         assert_eq!(addr, 0x10);
+    }
+
+    #[test]
+    fn test_php() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0x08]);
+        assert_eq!(cpu.read_mem(0x1FFu16), 0b0011_0000);
     }
 }
