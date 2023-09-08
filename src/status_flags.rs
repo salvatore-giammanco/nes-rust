@@ -4,9 +4,9 @@ pub enum StatusFlag {
     InterruptDisable, // Bit 2
     Decimal,          // Bit 3
     B,                // Bit 4
-                      // Bit 5 (always set to 1)
-    Overflow,         // Bit 6
-    Negative,         // Bit 7
+    // Bit 5 (always set to 1)
+    Overflow, // Bit 6
+    Negative, // Bit 7
 }
 
 pub struct FlagMask {
@@ -20,7 +20,9 @@ pub struct ProcessorStatus {
 
 impl ProcessorStatus {
     pub fn new() -> Self {
-        Self { status: 0b0010_0000 }
+        Self {
+            status: 0b0010_0000,
+        }
     }
 
     fn get_mask(&self, flag: StatusFlag) -> FlagMask {
@@ -61,6 +63,10 @@ impl ProcessorStatus {
             true => self.status = self.status | self.get_mask(flag).set,
             false => self.status = self.status & self.get_mask(flag).unset,
         };
+    }
+
+    pub fn set_from_byte(&mut self, byte: u8) {
+        self.status = byte;
     }
 
     pub fn update_zero_and_negative_registers(&mut self, value: u8) {

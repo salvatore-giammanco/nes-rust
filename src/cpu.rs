@@ -81,6 +81,7 @@ impl CPU {
     }
 
     fn write_mem_u16(&mut self, addr: u16, value: u16) {
+        // Writing 2 bytes in little endian
         let bytes = u16::to_le_bytes(value);
         for i in 0..bytes.len() {
             self.write_mem(addr + i as u16, bytes[i])
@@ -91,14 +92,35 @@ impl CPU {
         self.memory[self.program_counter as usize]
     }
 
-    pub fn push(&mut self, value: u8) -> bool {
+    pub fn stack_push(&mut self, value: u8) {
         if self.stack_pointer > 0 {
             let pointer: u16 = STACK + self.stack_pointer as u16;
             self.write_mem(pointer, value);
             self.stack_pointer -= 1;
-            return true;
+        } else {
+            panic!("Stack Overflow!")
         }
-        false
+    }
+
+    pub fn stack_push_u16(&mut self, value: u16) {
+        let bytes = u16::to_le_bytes(value);
+        self.stack_push(bytes[0]);
+        self.stack_push(bytes[1]);
+    }
+
+    pub fn stack_pull(&mut self) -> u8 {
+        let pointer: u16 = STACK + self.stack_pointer as u16 + 1;
+        let value: u8 = self.read_mem(pointer);
+        if self.stack_pointer < STACK_RESET {
+            self.stack_pointer += 1;
+        }
+        value
+    }
+
+    pub fn stack_pull_u16(&mut self) -> u16 {
+        let little: u8 = self.stack_pull();
+        let big: u8 = self.stack_pull();
+        u16::from_le_bytes([little, big])
     }
 
     pub fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
@@ -210,9 +232,23 @@ impl CPU {
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
-                    if !self.push(self.status.status) {
-                        panic!("Stack overflow");
-                    }
+                    self.stack_push(self.status.status);
+                }
+                "PHA" => {
+                    // Push Accumulator
+                    self.stack_push(self.register_accumulator);
+                }
+                "PLP" => {
+                    // Pull Processor Status
+                    let status: u8 = self.stack_pull();
+                    self.status.set_from_byte(status);
+                }
+                "RTI" => {
+                    // Return From Interrupt
+                    let status: u8 = self.stack_pull();
+                    self.status.set_from_byte(status);
+                    let pc: u16 = self.stack_pull_u16();
+                    self.program_counter = pc;
                 }
                 "LDA" => {
                     // Load Accumulator
@@ -388,5 +424,29 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0x08]);
         assert_eq!(cpu.read_mem(0x1FFu16), 0b0011_0000);
+    }
+
+    #[test]
+    fn test_pha() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0xFA, 0x48]);
+        assert_eq!(cpu.read_mem(0x1FF), 0xFA);
+    }
+
+    #[test]
+    fn test_plp() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0xFA, 0x48, 0x28]);
+        assert_eq!(cpu.status.status, 0xFA);
+    }
+
+    #[test]
+    fn test_rti() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![
+            0xA9, 0x81, 0x48, 0xA9, 0x02, 0x48, 0xA9, 0xFA, 0x48, 0x40,
+        ]);
+        assert_eq!(cpu.status.status, 0xFA);
+        assert_eq!(cpu.program_counter, 0x8103)
     }
 }
