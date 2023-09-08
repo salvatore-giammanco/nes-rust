@@ -217,9 +217,17 @@ impl CPU {
 
     pub fn asl(&mut self, value: u8) -> u8 {
         let last_bit = value & 0b1000_0000;
-        let carry = if last_bit.count_ones() > 0 { true } else { false };
+        let carry = if last_bit.count_ones() > 0 {
+            true
+        } else {
+            false
+        };
         self.status.set_flag(StatusFlag::Carry, carry);
         value << 1
+    }
+
+    pub fn branch(&mut self, condition: bool) {
+        if condition {}
     }
 
     pub fn execute(&mut self) {
@@ -242,7 +250,8 @@ impl CPU {
                     let addr = self.get_operand_address(&opcode.addressing_mode);
                     let value: u8 = self.read_mem(addr);
                     self.register_accumulator = self.register_accumulator.bitand(value);
-                    self.status.update_zero_and_negative_registers(self.register_accumulator);
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
                     self.program_counter += opcode.cycles - 1;
                 }
                 "ASL" => {
@@ -257,8 +266,13 @@ impl CPU {
                             self.write_mem(addr, result);
                         }
                     }
-                    self.status.update_zero_and_negative_registers(self.register_accumulator);
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
                     self.program_counter += opcode.cycles - 1;
+                }
+                "BCC" => {
+                    let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
+                    self.program_counter += 1 + relative_displacement as u16;
                 }
                 "BRK" => {
                     // Break
@@ -500,5 +514,12 @@ mod tests {
         cpu.write_mem(0x10, 0xF0);
         cpu.load_and_execute(vec![0x06, 0x10]);
         assert_eq!(cpu.read_mem(0x10), 0b1110_0000)
+    }
+
+    #[test]
+    fn test_bcc() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0x90, 0x06]);
+        assert_eq!(cpu.program_counter, 0x8009)
     }
 }
