@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::BitAnd;
 
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
@@ -225,6 +226,17 @@ impl CPU {
                 .expect(&format!("Unknown opcode {:x}", code));
 
             match opcode.label {
+                "ADC" => {
+                    // Add with carry
+                    self.adc(&opcode.addressing_mode);
+                    self.program_counter += opcode.cycles - 1;
+                }
+                "AND" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value: u8 = self.read_mem(addr);
+                    self.register_accumulator = self.register_accumulator.bitand(value);
+                    self.status.update_zero_and_negative_registers(self.register_accumulator);
+                }
                 "BRK" => {
                     // Break
                     return;
@@ -277,11 +289,6 @@ impl CPU {
 
                     self.status
                         .update_zero_and_negative_registers(self.index_register_x);
-                }
-                "ADC" => {
-                    // Add with carry
-                    self.adc(&opcode.addressing_mode);
-                    self.program_counter += opcode.cycles - 1;
                 }
                 "SBC" => {
                     // Subtract with carry
@@ -448,5 +455,12 @@ mod tests {
         ]);
         assert_eq!(cpu.status.status, 0xFA);
         assert_eq!(cpu.program_counter, 0x8103)
+    }
+
+    #[test]
+    fn test_and() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0x29, 0b0110_1001]);
+        assert_eq!(cpu.register_accumulator, 0b0110_1001)
     }
 }
