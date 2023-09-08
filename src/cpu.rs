@@ -215,6 +215,13 @@ impl CPU {
         self.add_width_carry(((value as i8).wrapping_neg().wrapping_sub(1)) as u8);
     }
 
+    pub fn asl(&mut self, value: u8) -> u8 {
+        let last_bit = value & 0b1000_0000;
+        let carry = if last_bit.count_ones() > 0 { true } else { false };
+        self.status.set_flag(StatusFlag::Carry, carry);
+        value << 1
+    }
+
     pub fn execute(&mut self) {
         let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
         loop {
@@ -236,6 +243,22 @@ impl CPU {
                     let value: u8 = self.read_mem(addr);
                     self.register_accumulator = self.register_accumulator.bitand(value);
                     self.status.update_zero_and_negative_registers(self.register_accumulator);
+                    self.program_counter += opcode.cycles - 1;
+                }
+                "ASL" => {
+                    match opcode.addressing_mode {
+                        AddressingMode::NoneAddressing => {
+                            self.register_accumulator = self.asl(self.register_accumulator);
+                        }
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.addressing_mode);
+                            let value = self.read_mem(addr);
+                            let result = self.asl(value);
+                            self.write_mem(addr, result);
+                        }
+                    }
+                    self.status.update_zero_and_negative_registers(self.register_accumulator);
+                    self.program_counter += opcode.cycles - 1;
                 }
                 "BRK" => {
                     // Break
@@ -462,5 +485,20 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0xFF, 0x29, 0b0110_1001]);
         assert_eq!(cpu.register_accumulator, 0b0110_1001)
+    }
+
+    #[test]
+    fn test_asl_a() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0xF0, 0x0A]);
+        assert_eq!(cpu.register_accumulator, 0b1110_0000)
+    }
+
+    #[test]
+    fn test_asl_mem() {
+        let mut cpu = CPU::new();
+        cpu.write_mem(0x10, 0xF0);
+        cpu.load_and_execute(vec![0x06, 0x10]);
+        assert_eq!(cpu.read_mem(0x10), 0b1110_0000)
     }
 }
