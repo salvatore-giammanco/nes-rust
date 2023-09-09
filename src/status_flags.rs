@@ -69,6 +69,11 @@ impl ProcessorStatus {
         self.status = byte;
     }
 
+    pub fn get_flag(&self, flag: StatusFlag) -> bool {
+        let check = self.get_mask(flag).set & self.status;
+        check.count_ones() > 0
+    }
+
     pub fn update_zero_and_negative_registers(&mut self, value: u8) {
         if value == 0 {
             self.set_flag(StatusFlag::Zero, true);

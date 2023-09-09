@@ -227,7 +227,10 @@ impl CPU {
     }
 
     pub fn branch(&mut self, condition: bool) {
-        if condition {}
+        if condition {
+            let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
+            self.program_counter += 1 + relative_displacement as u16;
+        }
     }
 
     pub fn execute(&mut self) {
@@ -271,8 +274,7 @@ impl CPU {
                     self.program_counter += opcode.cycles - 1;
                 }
                 "BCC" => {
-                    let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
-                    self.program_counter += 1 + relative_displacement as u16;
+                    self.branch(self.status.get_flag(StatusFlag::Carry))
                 }
                 "BRK" => {
                     // Break
@@ -519,7 +521,7 @@ mod tests {
     #[test]
     fn test_bcc() {
         let mut cpu = CPU::new();
-        cpu.load_and_execute(vec![0x90, 0x06]);
-        assert_eq!(cpu.program_counter, 0x8009)
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10, 0x90, 0x06, 0x00]);
+        assert_eq!(cpu.program_counter, 0x800D)
     }
 }
