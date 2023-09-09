@@ -316,6 +316,12 @@ impl CPU {
                 }
                 "DEX" => self.index_register_x = self.decrement(self.index_register_x),
                 "DEY" => self.index_register_y = self.decrement(self.index_register_y),
+                "EOR" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    let result = self.register_accumulator.bitxor(value);
+                    self.status.update_zero_and_negative_registers(result);
+                }
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
@@ -648,5 +654,13 @@ mod tests {
         cpu.write_mem(0x10, 0x43);
         cpu.load_and_execute(vec![0xC6, 0x10]);
         assert_eq!(cpu.read_mem(0x10), 0x42);
+    }
+
+    #[test]
+    fn test_eor() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0x10, 0x49, 0x10]);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Zero), true);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
     }
 }
