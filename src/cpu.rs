@@ -234,7 +234,8 @@ impl CPU {
         let value = self.read_mem(addr);
 
         self.status.set_flag(StatusFlag::Carry, other >= value);
-        self.status.update_zero_and_negative_registers(other.wrapping_sub(value));
+        self.status
+            .update_zero_and_negative_registers(other.wrapping_sub(value));
     }
 
     pub fn execute(&mut self) {
@@ -242,6 +243,7 @@ impl CPU {
         loop {
             let code = self.fetch();
             self.program_counter += 1;
+            let program_counter_state = self.program_counter;
 
             let opcode = opcodes
                 .get(&code)
@@ -251,7 +253,6 @@ impl CPU {
                 "ADC" => {
                     // Add with carry
                     self.adc(&opcode.addressing_mode);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "AND" => {
                     let addr = self.get_operand_address(&opcode.addressing_mode);
@@ -259,7 +260,6 @@ impl CPU {
                     self.register_accumulator = self.register_accumulator.bitand(value);
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "ASL" => {
                     match opcode.addressing_mode {
@@ -275,7 +275,6 @@ impl CPU {
                     }
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "BCC" => self.branch(!self.status.get_flag(StatusFlag::Carry)),
                 "BCS" => self.branch(self.status.get_flag(StatusFlag::Carry)),
@@ -286,7 +285,6 @@ impl CPU {
                     let overflow = result & 0x40 != 0;
                     self.status.set_flag(StatusFlag::Overflow, overflow);
                     self.status.update_zero_and_negative_registers(result);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "BMI" => self.branch(self.status.get_flag(StatusFlag::Negative)),
                 "BNE" => self.branch(!self.status.get_flag(StatusFlag::Zero)),
@@ -303,7 +301,6 @@ impl CPU {
                 "CLV" => self.status.set_flag(StatusFlag::Overflow, false),
                 "CMP" => {
                     self.compare(&opcode.addressing_mode, self.register_accumulator);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "PHP" => {
                     // Push Processor Status
@@ -329,12 +326,10 @@ impl CPU {
                 "LDA" => {
                     // Load Accumulator
                     self.lda(&opcode.addressing_mode);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "STA" => {
                     // Store Accumulator
                     self.sta(&opcode.addressing_mode);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "TAX" => {
                     // Transfer Accumulator to register X
@@ -357,9 +352,12 @@ impl CPU {
                 "SBC" => {
                     // Subtract with carry
                     self.sbc(&opcode.addressing_mode);
-                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 _ => todo!(),
+            }
+
+            if program_counter_state == self.program_counter {
+                self.program_counter += (opcode.bytes - 1) as u16;
             }
         }
     }
