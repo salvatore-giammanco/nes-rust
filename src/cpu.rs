@@ -279,6 +279,9 @@ impl CPU {
                 "BCS" => {
                     self.branch(self.status.get_flag(StatusFlag::Carry))
                 }
+                "BEQ" => {
+                    self.branch(self.status.get_flag(StatusFlag::Zero))
+                }
                 "BRK" => {
                     // Break
                     return;
