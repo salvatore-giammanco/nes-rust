@@ -62,6 +62,7 @@ lazy_static! {
         OpCode::new(0x50, "BVC", 2, 2, /* +1 if branch succeeds +2 if to a new page */ AddressingMode::NoneAddressing),
         OpCode::new(0x70, "BVS", 2, 2, /* +1 if branch succeeds +2 if to a new page */ AddressingMode::NoneAddressing),
         OpCode::new(0x18, "CLC", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new(0xD8, "CLD", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0x08, "PHP", 1, 3, AddressingMode::NoneAddressing),
         OpCode::new(0x48, "PHA", 1, 3, AddressingMode::NoneAddressing),
         OpCode::new(0x28, "PLP", 1, 4, AddressingMode::NoneAddressing),

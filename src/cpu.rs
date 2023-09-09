@@ -290,6 +290,7 @@ impl CPU {
                 "BVC" => self.branch(!self.status.get_flag(StatusFlag::Overflow)),
                 "BVS" => self.branch(self.status.get_flag(StatusFlag::Overflow)),
                 "CLC" => self.status.set_flag(StatusFlag::Carry, false),
+                "CLD" => self.status.set_flag(StatusFlag::Decimal, false),
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
@@ -564,5 +565,15 @@ mod tests {
         cpu.status.set_flag(StatusFlag::Carry, true);
         cpu.execute();
         assert_eq!(cpu.status.get_flag(StatusFlag::Carry), false);
+    }
+
+    #[test]
+    fn test_cld() {
+        let mut cpu = CPU::new();
+        cpu.load_program(vec![0xD8]);
+        cpu.reset();
+        cpu.status.set_flag(StatusFlag::Decimal, true);
+        cpu.execute();
+        assert_eq!(cpu.status.get_flag(StatusFlag::Decimal), false);
     }
 }
