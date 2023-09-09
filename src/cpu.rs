@@ -274,6 +274,9 @@ impl CPU {
                     self.program_counter += opcode.cycles - 1;
                 }
                 "BCC" => {
+                    self.branch(!self.status.get_flag(StatusFlag::Carry))
+                }
+                "BCS" => {
                     self.branch(self.status.get_flag(StatusFlag::Carry))
                 }
                 "BRK" => {
@@ -521,7 +524,14 @@ mod tests {
     #[test]
     fn test_bcc() {
         let mut cpu = CPU::new();
-        cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10, 0x90, 0x06, 0x00]);
+        cpu.load_and_execute(vec![0x90, 0x06, 0x00]);
+        assert_eq!(cpu.program_counter, 0x8009)
+    }
+
+    #[test]
+    fn test_bcs() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10, 0xB0, 0x06, 0x00]);
         assert_eq!(cpu.program_counter, 0x800D)
     }
 }
