@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::ops::BitAnd;
+use std::ops::{Add, BitAnd, BitXor};
 
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
@@ -229,6 +229,14 @@ impl CPU {
         }
     }
 
+    pub fn compare(&mut self, mode: &AddressingMode, other: u8) {
+        let addr = self.get_operand_address(mode);
+        let value = self.read_mem(addr);
+
+        self.status.set_flag(StatusFlag::Carry, other >= value);
+        self.status.update_zero_and_negative_registers(other.wrapping_sub(value));
+    }
+
     pub fn execute(&mut self) {
         let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
         loop {
@@ -243,7 +251,7 @@ impl CPU {
                 "ADC" => {
                     // Add with carry
                     self.adc(&opcode.addressing_mode);
-                    self.program_counter += opcode.cycles - 1;
+                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "AND" => {
                     let addr = self.get_operand_address(&opcode.addressing_mode);
@@ -251,7 +259,7 @@ impl CPU {
                     self.register_accumulator = self.register_accumulator.bitand(value);
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
-                    self.program_counter += opcode.cycles - 1;
+                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "ASL" => {
                     match opcode.addressing_mode {
@@ -267,7 +275,7 @@ impl CPU {
                     }
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
-                    self.program_counter += opcode.cycles - 1;
+                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "BCC" => self.branch(!self.status.get_flag(StatusFlag::Carry)),
                 "BCS" => self.branch(self.status.get_flag(StatusFlag::Carry)),
@@ -278,7 +286,7 @@ impl CPU {
                     let overflow = result & 0x40 != 0;
                     self.status.set_flag(StatusFlag::Overflow, overflow);
                     self.status.update_zero_and_negative_registers(result);
-                    self.program_counter += opcode.cycles - 1;
+                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "BMI" => self.branch(self.status.get_flag(StatusFlag::Negative)),
                 "BNE" => self.branch(!self.status.get_flag(StatusFlag::Zero)),
@@ -293,6 +301,10 @@ impl CPU {
                 "CLD" => self.status.set_flag(StatusFlag::Decimal, false),
                 "CLI" => self.status.set_flag(StatusFlag::InterruptDisable, false),
                 "CLV" => self.status.set_flag(StatusFlag::Overflow, false),
+                "CMP" => {
+                    self.compare(&opcode.addressing_mode, self.register_accumulator);
+                    self.program_counter += (opcode.bytes - 1) as u16;
+                }
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
@@ -317,12 +329,12 @@ impl CPU {
                 "LDA" => {
                     // Load Accumulator
                     self.lda(&opcode.addressing_mode);
-                    self.program_counter += opcode.cycles - 1;
+                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "STA" => {
                     // Store Accumulator
                     self.sta(&opcode.addressing_mode);
-                    self.program_counter += opcode.cycles - 1;
+                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 "TAX" => {
                     // Transfer Accumulator to register X
@@ -345,7 +357,7 @@ impl CPU {
                 "SBC" => {
                     // Subtract with carry
                     self.sbc(&opcode.addressing_mode);
-                    self.program_counter += opcode.cycles - 1;
+                    self.program_counter += (opcode.bytes - 1) as u16;
                 }
                 _ => todo!(),
             }
@@ -597,5 +609,24 @@ mod tests {
         cpu.status.set_flag(StatusFlag::Overflow, true);
         cpu.execute();
         assert_eq!(cpu.status.get_flag(StatusFlag::Overflow), false);
+    }
+
+    #[test]
+    fn test_cmp() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0x42, 0xC9, 0x42]);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Zero), true);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
+
+        cpu.load_and_execute(vec![0xA9, 0x43, 0xC9, 0x42]);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Zero), false);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
+
+        cpu.load_and_execute(vec![0xA9, 0x42, 0xC9, 0xC2]);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Zero), false);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), false);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), true);
     }
 }
