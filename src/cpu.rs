@@ -302,6 +302,12 @@ impl CPU {
                 "CMP" => {
                     self.compare(&opcode.addressing_mode, self.register_accumulator);
                 }
+                "CPX" => {
+                    self.compare(&opcode.addressing_mode, self.index_register_x);
+                }
+                "CPY" => {
+                    self.compare(&opcode.addressing_mode, self.index_register_y);
+                }
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
