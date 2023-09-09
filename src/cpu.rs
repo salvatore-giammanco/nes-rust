@@ -320,7 +320,7 @@ impl CPU {
                     let addr = self.get_operand_address(&opcode.addressing_mode);
                     let value = self.read_mem(addr);
                     let result = self.register_accumulator.bitxor(value);
-                    self.status.update_zero_and_negative_registers(result);
+                    self.load_accumulator(result);
                 }
                 "PHP" => {
                     // Push Processor Status
@@ -660,6 +660,7 @@ mod tests {
     fn test_eor() {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0x10, 0x49, 0x10]);
+        assert_eq!(cpu.register_accumulator, 0x00);
         assert_eq!(cpu.status.get_flag(StatusFlag::Zero), true);
         assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
     }
