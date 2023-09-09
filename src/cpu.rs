@@ -238,6 +238,12 @@ impl CPU {
             .update_zero_and_negative_registers(other.wrapping_sub(value));
     }
 
+    pub fn decrement(&mut self, value: u8) -> u8 {
+        let result = value.wrapping_sub(1);
+        self.status.update_zero_and_negative_registers(result);
+        result
+    }
+
     pub fn execute(&mut self) {
         let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
         loop {
@@ -299,15 +305,17 @@ impl CPU {
                 "CLD" => self.status.set_flag(StatusFlag::Decimal, false),
                 "CLI" => self.status.set_flag(StatusFlag::InterruptDisable, false),
                 "CLV" => self.status.set_flag(StatusFlag::Overflow, false),
-                "CMP" => {
-                    self.compare(&opcode.addressing_mode, self.register_accumulator);
+                "CMP" => self.compare(&opcode.addressing_mode, self.register_accumulator),
+                "CPX" => self.compare(&opcode.addressing_mode, self.index_register_x),
+                "CPY" => self.compare(&opcode.addressing_mode, self.index_register_y),
+                "DEC" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    let result = self.decrement(value);
+                    self.write_mem(addr, result);
                 }
-                "CPX" => {
-                    self.compare(&opcode.addressing_mode, self.index_register_x);
-                }
-                "CPY" => {
-                    self.compare(&opcode.addressing_mode, self.index_register_y);
-                }
+                "DEX" => self.index_register_x = self.decrement(self.index_register_x),
+                "DEY" => self.index_register_y = self.decrement(self.index_register_y),
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
@@ -632,5 +640,13 @@ mod tests {
         assert_eq!(cpu.status.get_flag(StatusFlag::Zero), false);
         assert_eq!(cpu.status.get_flag(StatusFlag::Carry), false);
         assert_eq!(cpu.status.get_flag(StatusFlag::Negative), true);
+    }
+
+    #[test]
+    fn test_dec() {
+        let mut cpu = CPU::new();
+        cpu.write_mem(0x10, 0x43);
+        cpu.load_and_execute(vec![0xC6, 0x10]);
+        assert_eq!(cpu.read_mem(0x10), 0x42);
     }
 }
