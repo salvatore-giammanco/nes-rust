@@ -269,19 +269,14 @@ impl CPU {
                         .update_zero_and_negative_registers(self.register_accumulator);
                     self.program_counter += opcode.cycles - 1;
                 }
-                "BCC" => {
-                    self.branch(!self.status.get_flag(StatusFlag::Carry))
-                }
-                "BCS" => {
-                    self.branch(self.status.get_flag(StatusFlag::Carry))
-                }
-                "BEQ" => {
-                    self.branch(self.status.get_flag(StatusFlag::Zero))
-                }
+                "BCC" => self.branch(!self.status.get_flag(StatusFlag::Carry)),
+                "BCS" => self.branch(self.status.get_flag(StatusFlag::Carry)),
+                "BEQ" => self.branch(self.status.get_flag(StatusFlag::Zero)),
                 "BIT" => {
                     let addr = self.get_operand_address(&opcode.addressing_mode);
                     let result = self.register_accumulator.bitand(self.read_mem(addr));
-                    self.status.set_flag(StatusFlag::Overflow, result & 0x40 != 0);
+                    let overflow = result & 0x40 != 0;
+                    self.status.set_flag(StatusFlag::Overflow, overflow);
                     self.status.update_zero_and_negative_registers(result);
                     self.program_counter += opcode.cycles - 1;
                 }
@@ -539,5 +534,19 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0xFF, 0x69, 0x10, 0xB0, 0x06, 0x00]);
         assert_eq!(cpu.program_counter, 0x800D)
+    }
+
+    #[test]
+    fn test_bit() {
+        let mut cpu = CPU::new();
+        cpu.write_mem(0x10, 0xFF);
+        cpu.load_and_execute(vec![0xA9, 0x0, 0x24, 0x10]);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Zero), true);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Overflow), false);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
+        cpu.load_and_execute(vec![0xA9, 0b1100_0000, 0x24, 0x10]);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Zero), false);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Overflow), true);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), true);
     }
 }
