@@ -244,6 +244,12 @@ impl CPU {
         result
     }
 
+    pub fn increment(&mut self, value: u8) -> u8 {
+        let result = value.wrapping_add(1);
+        self.status.update_zero_and_negative_registers(result);
+        result
+    }
+
     pub fn execute(&mut self) {
         let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
         loop {
@@ -322,6 +328,14 @@ impl CPU {
                     let result = self.register_accumulator.bitxor(value);
                     self.load_accumulator(result);
                 }
+                "INC" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    let result = self.increment(value);
+                    self.write_mem(addr, result);
+                }
+                "INX" => self.index_register_x = self.increment(self.index_register_x),
+                "INY" => self.index_register_y = self.increment(self.index_register_y),
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
@@ -663,5 +677,12 @@ mod tests {
         assert_eq!(cpu.register_accumulator, 0x00);
         assert_eq!(cpu.status.get_flag(StatusFlag::Zero), true);
         assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
+    }
+    #[test]
+    fn test_inc() {
+        let mut cpu = CPU::new();
+        cpu.write_mem(0x10, 0x41);
+        cpu.load_and_execute(vec![0xE6, 0x10]);
+        assert_eq!(cpu.read_mem(0x10), 0x42);
     }
 }
