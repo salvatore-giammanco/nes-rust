@@ -184,12 +184,8 @@ impl CPU {
     }
 
     pub fn add_width_carry(&mut self, value: u8) {
-        let carry: u16 = if self.status.status & 0b0000_0001 != 0b00 {
-            1
-        } else {
-            0
-        };
-        let result: u16 = self.register_accumulator as u16 + value as u16 + carry;
+        let carry: u8 = self.status.get_flag(StatusFlag::Carry) as u8;
+        let result: u16 = self.register_accumulator as u16 + value as u16 + carry as u16;
 
         let carry: bool = if result > 0xFF { true } else { false };
         let result: u8 = result as u8;
@@ -217,7 +213,7 @@ impl CPU {
 
     pub fn asl(&mut self, value: u8) -> u8 {
         let last_bit = value & 0b1000_0000;
-        let carry = if last_bit.count_ones() > 0 {
+        let carry = if last_bit.count_ones() != 0 {
             true
         } else {
             false
@@ -281,6 +277,13 @@ impl CPU {
                 }
                 "BEQ" => {
                     self.branch(self.status.get_flag(StatusFlag::Zero))
+                }
+                "BIT" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let result = self.register_accumulator.bitand(self.read_mem(addr));
+                    self.status.set_flag(StatusFlag::Overflow, result & 0x40 != 0);
+                    self.status.update_zero_and_negative_registers(result);
+                    self.program_counter += opcode.cycles - 1;
                 }
                 "BRK" => {
                     // Break
