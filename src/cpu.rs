@@ -280,10 +280,15 @@ impl CPU {
                     self.status.update_zero_and_negative_registers(result);
                     self.program_counter += opcode.cycles - 1;
                 }
+                "BMI" => self.branch(self.status.get_flag(StatusFlag::Negative)),
+                "BNE" => self.branch(!self.status.get_flag(StatusFlag::Zero)),
+                "BPL" => self.branch(!self.status.get_flag(StatusFlag::Negative)),
                 "BRK" => {
                     // Break
                     return;
                 }
+                "BVC" => self.branch(!self.status.get_flag(StatusFlag::Overflow)),
+                "BVS" => self.branch(self.status.get_flag(StatusFlag::Overflow)),
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
