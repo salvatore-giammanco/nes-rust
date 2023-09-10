@@ -367,6 +367,25 @@ impl CPU {
                     let addr = self.get_operand_address(&opcode.addressing_mode);
                     self.program_counter = addr;
                 }
+                "LDA" => {
+                    // Load Accumulator
+                    self.lda(&opcode.addressing_mode);
+                }
+                "LDX" => {
+                    // Load X Register
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    self.index_register_x = value;
+                    self.status.update_zero_and_negative_registers(value);
+
+                }
+                "LDY" => {
+                    // Load Y Register
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    self.index_register_y = value;
+                    self.status.update_zero_and_negative_registers(value);
+                }
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
@@ -387,10 +406,6 @@ impl CPU {
                     self.status.set_from_byte(status);
                     let pc: u16 = self.stack_pull_u16();
                     self.program_counter = pc;
-                }
-                "LDA" => {
-                    // Load Accumulator
-                    self.lda(&opcode.addressing_mode);
                 }
                 "STA" => {
                     // Store Accumulator
@@ -731,12 +746,26 @@ mod tests {
         cpu.stack_push_u16(0xCAFE);
         assert_eq!(cpu.stack_pull_u16(), 0xCAFE);
     }
+
     #[test]
     fn test_jsr() {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0x20, 0xFD, 0xCA]);
         assert_eq!(cpu.stack_pull_u16(), 0x8002);
         assert_eq!(cpu.program_counter, 0xCAFE);
+    }
 
+    #[test]
+    fn test_ldx() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA2, 0x42]);
+        assert_eq!(cpu.index_register_x, 0x42);
+    }
+
+    #[test]
+    fn test_ldy() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA0, 0x42]);
+        assert_eq!(cpu.index_register_y, 0x42);
     }
 }
