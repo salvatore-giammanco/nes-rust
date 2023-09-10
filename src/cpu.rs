@@ -406,6 +406,8 @@ impl CPU {
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
                 }
+                "NOP" => {}
+
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
