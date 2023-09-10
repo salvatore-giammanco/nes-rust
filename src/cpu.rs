@@ -225,6 +225,20 @@ impl CPU {
         value >> 1
     }
 
+    pub fn rol(&mut self, value: u8) -> u8 {
+        let last_bit = value & 0b1000_0000;
+        let carry = last_bit.count_ones() != 0;
+        self.status.set_flag(StatusFlag::Carry, carry);
+        (value << 1) | carry as u8
+    }
+
+    pub fn ror(&mut self, value: u8) -> u8 {
+        let first_bit = value & 0b0000_0001;
+        let carry = first_bit.count_ones() != 0;
+        self.status.set_flag(StatusFlag::Carry, carry);
+        (value >> 1) | (carry as u8).reverse_bits()
+    }
+
     pub fn branch(&mut self, condition: bool) {
         if condition {
             let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
@@ -431,6 +445,38 @@ impl CPU {
                     // Pull Processor Status
                     let status: u8 = self.stack_pull();
                     self.status.set_from_byte(status);
+                }
+                "ROL" => {
+                    // Rotate Left
+                    match opcode.addressing_mode {
+                        AddressingMode::NoneAddressing => {
+                            self.register_accumulator = self.rol(self.register_accumulator);
+                        }
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.addressing_mode);
+                            let value = self.read_mem(addr);
+                            let result = self.rol(value);
+                            self.write_mem(addr, result);
+                        }
+                    }
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
+                }
+                "ROR" => {
+                    // Rotate Right
+                    match opcode.addressing_mode {
+                        AddressingMode::NoneAddressing => {
+                            self.register_accumulator = self.ror(self.register_accumulator);
+                        }
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.addressing_mode);
+                            let value = self.read_mem(addr);
+                            let result = self.ror(value);
+                            self.write_mem(addr, result);
+                        }
+                    }
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "RTI" => {
                     // Return From Interrupt
@@ -821,5 +867,21 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0x42, 0x48, 0xA9, 0x10, 0x68]);
         assert_eq!(cpu.register_accumulator, 0x42);
+    }
+
+    #[test]
+    fn test_rol() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0b1000_0010, 0x2A]);
+        assert_eq!(cpu.register_accumulator, 0b_0000_0101);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
+    }
+
+    #[test]
+    fn test_ror() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0b1000_0011, 0x6A]);
+        assert_eq!(cpu.register_accumulator, 0b1100_0001);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
     }
 }
