@@ -121,7 +121,7 @@ impl CPU {
     pub fn stack_pull_u16(&mut self) -> u16 {
         let little: u8 = self.stack_pull();
         let big: u8 = self.stack_pull();
-        u16::from_le_bytes([little, big])
+        u16::from_le_bytes([big, little])
     }
 
     pub fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
@@ -337,6 +337,7 @@ impl CPU {
                 "INX" => self.index_register_x = self.increment(self.index_register_x),
                 "INY" => self.index_register_y = self.increment(self.index_register_y),
                 "JMP" => {
+                    // Jump
                     match opcode.addressing_mode {
                         AddressingMode::Absolute => {
                             let addr = self.get_operand_address(&opcode.addressing_mode);
@@ -359,6 +360,12 @@ impl CPU {
                             self.program_counter = indirect_ref;
                         }
                     }
+                }
+                "JSR" => {
+                    // Jump To Subroutine
+                    self.stack_push_u16(self.program_counter + 1); // + 2 - 1
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    self.program_counter = addr;
                 }
                 "PHP" => {
                     // Push Processor Status
@@ -563,7 +570,7 @@ mod tests {
             0xA9, 0x81, 0x48, 0xA9, 0x02, 0x48, 0xA9, 0xFA, 0x48, 0x40,
         ]);
         assert_eq!(cpu.status.status, 0xFA);
-        assert_eq!(cpu.program_counter, 0x8103)
+        assert_eq!(cpu.program_counter, 0x0282)
     }
 
     #[test]
@@ -691,6 +698,7 @@ mod tests {
         assert_eq!(cpu.status.get_flag(StatusFlag::Zero), true);
         assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
     }
+
     #[test]
     fn test_inc() {
         let mut cpu = CPU::new();
@@ -715,6 +723,20 @@ mod tests {
         cpu.write_mem(0x3100, 0x30);
         cpu.load_and_execute(vec![0x6C, 0xFF, 0x30]);
         assert_eq!(cpu.program_counter, 0x2051);
+    }
+
+    #[test]
+    fn test_stack_u16() {
+        let mut cpu = CPU::new();
+        cpu.stack_push_u16(0xCAFE);
+        assert_eq!(cpu.stack_pull_u16(), 0xCAFE);
+    }
+    #[test]
+    fn test_jsr() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0x20, 0xFD, 0xCA]);
+        assert_eq!(cpu.stack_pull_u16(), 0x8002);
+        assert_eq!(cpu.program_counter, 0xCAFE);
 
     }
 }
