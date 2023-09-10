@@ -485,6 +485,7 @@ impl CPU {
                     let pc: u16 = self.stack_pull_u16();
                     self.program_counter = pc;
                 }
+                "RTS" => self.program_counter = self.stack_pull_u16(),
                 "STA" => {
                     // Store Accumulator
                     self.sta(&opcode.addressing_mode);
@@ -883,5 +884,12 @@ mod tests {
         cpu.load_and_execute(vec![0xA9, 0b1000_0011, 0x6A]);
         assert_eq!(cpu.register_accumulator, 0b1100_0001);
         assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
+    }
+
+    #[test]
+    fn test_rts() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0x20, 0xFD, 0xCA, 0x60]);
+        assert_eq!(cpu.program_counter, 0xCAFE);
     }
 }
