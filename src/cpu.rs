@@ -486,6 +486,13 @@ impl CPU {
                     self.program_counter = pc;
                 }
                 "RTS" => self.program_counter = self.stack_pull_u16(),
+                "SBC" => {
+                    // Subtract with carry
+                    self.sbc(&opcode.addressing_mode);
+                }
+                "SEC" => self.status.set_flag(StatusFlag::Carry, true),
+                "SED" => self.status.set_flag(StatusFlag::Decimal, true),
+                "SEI" => self.status.set_flag(StatusFlag::InterruptDisable, true),
                 "STA" => {
                     // Store Accumulator
                     self.sta(&opcode.addressing_mode);
@@ -496,10 +503,6 @@ impl CPU {
 
                     self.status
                         .update_zero_and_negative_registers(self.index_register_x);
-                }
-                "SBC" => {
-                    // Subtract with carry
-                    self.sbc(&opcode.addressing_mode);
                 }
                 _ => todo!(),
             }
