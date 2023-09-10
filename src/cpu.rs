@@ -213,13 +213,16 @@ impl CPU {
 
     pub fn asl(&mut self, value: u8) -> u8 {
         let last_bit = value & 0b1000_0000;
-        let carry = if last_bit.count_ones() != 0 {
-            true
-        } else {
-            false
-        };
+        let carry = last_bit.count_ones() != 0;
         self.status.set_flag(StatusFlag::Carry, carry);
         value << 1
+    }
+
+    pub fn lsr(&mut self, value: u8) -> u8 {
+        let first_bit = value & 0b0000_0001;
+        let carry = first_bit.count_ones() != 0;
+        self.status.set_flag(StatusFlag::Carry, carry);
+        value >> 1
     }
 
     pub fn branch(&mut self, condition: bool) {
@@ -274,6 +277,7 @@ impl CPU {
                         .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "ASL" => {
+                    // Arithmetic Shift Left
                     match opcode.addressing_mode {
                         AddressingMode::NoneAddressing => {
                             self.register_accumulator = self.asl(self.register_accumulator);
@@ -385,6 +389,22 @@ impl CPU {
                     let value = self.read_mem(addr);
                     self.index_register_y = value;
                     self.status.update_zero_and_negative_registers(value);
+                }
+                "LSR" => {
+                    // Logical Shift Right
+                    match opcode.addressing_mode {
+                        AddressingMode::NoneAddressing => {
+                            self.register_accumulator = self.lsr(self.register_accumulator);
+                        }
+                        _ => {
+                            let addr = self.get_operand_address(&opcode.addressing_mode);
+                            let value = self.read_mem(addr);
+                            let result = self.lsr(value);
+                            self.write_mem(addr, result);
+                        }
+                    }
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "PHP" => {
                     // Push Processor Status
@@ -767,5 +787,13 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA0, 0x42]);
         assert_eq!(cpu.index_register_y, 0x42);
+    }
+
+    #[test]
+    fn test_lsr() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0b1110_0011, 0x4A]);
+        assert_eq!(cpu.register_accumulator, 0b0111_0001);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
     }
 }
