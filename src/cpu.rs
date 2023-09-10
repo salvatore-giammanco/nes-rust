@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::ops::{Add, BitAnd, BitXor};
+use std::ops::{Add, BitAnd, BitOr, BitXor};
 
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
@@ -407,15 +407,20 @@ impl CPU {
                         .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "NOP" => {}
-
-                "PHP" => {
-                    // Push Processor Status
-                    self.status.set_flag(StatusFlag::B, true);
-                    self.stack_push(self.status.status);
+                "ORA" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    let result = self.register_accumulator.bitor(value);
+                    self.load_accumulator(result);
                 }
                 "PHA" => {
                     // Push Accumulator
                     self.stack_push(self.register_accumulator);
+                }
+                "PHP" => {
+                    // Push Processor Status
+                    self.status.set_flag(StatusFlag::B, true);
+                    self.stack_push(self.status.status);
                 }
                 "PLP" => {
                     // Pull Processor Status
@@ -797,5 +802,12 @@ mod tests {
         cpu.load_and_execute(vec![0xA9, 0b1110_0011, 0x4A]);
         assert_eq!(cpu.register_accumulator, 0b0111_0001);
         assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
+    }
+
+    #[test]
+    fn test_ora() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0b0110_0110, 0x09, 0b1001_1000]);
+        assert_eq!(cpu.register_accumulator, 0b1111_1110);
     }
 }
