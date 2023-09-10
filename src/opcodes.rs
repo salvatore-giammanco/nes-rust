@@ -161,8 +161,6 @@ lazy_static! {
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0xF8, "SED", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0x78, "SEI", 1, 2, AddressingMode::NoneAddressing),
-
-        OpCode::new(0xAA, "TAX", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0xE8, "INX", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
@@ -171,6 +169,13 @@ lazy_static! {
         OpCode::new(0x99, "STA", 3, 5, AddressingMode::Absolute_Y),
         OpCode::new(0x81, "STA", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0x91, "STA", 2, 6, AddressingMode::Indirect_Y),
+        OpCode::new(0x86, "STX", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x96, "STX", 2, 4, AddressingMode::ZeroPage_Y),
+        OpCode::new(0x8E, "STX", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0x84, "STY", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x94, "STY", 2, 4, AddressingMode::ZeroPage_Y),
+        OpCode::new(0x8C, "STY", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0xAA, "TAX", 1, 2, AddressingMode::NoneAddressing),
     ];
 
     pub static ref CPU_OPCODES_MAP: HashMap<u8, &'static OpCode> = {

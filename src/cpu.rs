@@ -395,7 +395,6 @@ impl CPU {
                     let value = self.read_mem(addr);
                     self.index_register_x = value;
                     self.status.update_zero_and_negative_registers(value);
-
                 }
                 "LDY" => {
                     // Load Y Register
@@ -496,6 +495,14 @@ impl CPU {
                 "STA" => {
                     // Store Accumulator
                     self.sta(&opcode.addressing_mode);
+                }
+                "STX" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    self.write_mem(addr, self.index_register_x);
+                }
+                "STY" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    self.write_mem(addr, self.index_register_y);
                 }
                 "TAX" => {
                     // Transfer Accumulator to register X
@@ -894,5 +901,19 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0x20, 0xFD, 0xCA, 0x60]);
         assert_eq!(cpu.program_counter, 0xCAFE);
+    }
+
+    #[test]
+    fn test_stx() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA2, 0x42, 0x8E, 0xFA, 0xFA]);
+        assert_eq!(cpu.read_mem_u16(0xFAFA), 0x42);
+    }
+
+    #[test]
+    fn test_sty() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA0, 0x42, 0x8C, 0xFA, 0xFA]);
+        assert_eq!(cpu.read_mem_u16(0xFAFA), 0x42);
     }
 }
