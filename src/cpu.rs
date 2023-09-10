@@ -422,6 +422,11 @@ impl CPU {
                     self.status.set_flag(StatusFlag::B, true);
                     self.stack_push(self.status.status);
                 }
+                "PLA" => {
+                    // Pull Accumulator
+                    let value = self.stack_pull();
+                    self.load_accumulator(value);
+                }
                 "PLP" => {
                     // Pull Processor Status
                     let status: u8 = self.stack_pull();
@@ -809,5 +814,12 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0b0110_0110, 0x09, 0b1001_1000]);
         assert_eq!(cpu.register_accumulator, 0b1111_1110);
+    }
+
+    #[test]
+    fn test_pla() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0x42, 0x48, 0xA9, 0x10, 0x68]);
+        assert_eq!(cpu.register_accumulator, 0x42);
     }
 }
