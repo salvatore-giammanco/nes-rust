@@ -518,6 +518,8 @@ impl CPU {
                     self.status
                         .update_zero_and_negative_registers(self.index_register_y);
                 }
+                "TXA" => self.load_accumulator(self.index_register_x),
+                "TYA" => self.load_accumulator(self.index_register_y),
 
                 _ => todo!(),
             }
@@ -929,5 +931,19 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0x42, 0xA8]);
         assert_eq!(cpu.index_register_y, 0x42);
+    }
+
+    #[test]
+    fn test_txa() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA2, 0x42, 0x8A]);
+        assert_eq!(cpu.register_accumulator, 0x42);
+    }
+
+    #[test]
+    fn test_tya() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA0, 0x42, 0x9A]);
+        assert_eq!(cpu.register_accumulator, 0x42);
     }
 }
