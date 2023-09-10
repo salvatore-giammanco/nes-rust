@@ -99,6 +99,8 @@ lazy_static! {
         OpCode::new(0xFE, "INC", 3, 7 /* +1 if page is crossed */, AddressingMode::Absolute_X),
         OpCode::new(0xE8, "INX", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0xC8, "INY", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::Absolute),
+        OpCode::new(0x6C, "JMP", 3, 5, AddressingMode::NoneAddressing),
         OpCode::new(0x08, "PHP", 1, 3, AddressingMode::NoneAddressing),
         OpCode::new(0x48, "PHA", 1, 3, AddressingMode::NoneAddressing),
         OpCode::new(0x28, "PLP", 1, 4, AddressingMode::NoneAddressing),

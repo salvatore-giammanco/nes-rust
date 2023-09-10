@@ -336,6 +336,30 @@ impl CPU {
                 }
                 "INX" => self.index_register_x = self.increment(self.index_register_x),
                 "INY" => self.index_register_y = self.increment(self.index_register_y),
+                "JMP" => {
+                    match opcode.addressing_mode {
+                        AddressingMode::Absolute => {
+                            let addr = self.get_operand_address(&opcode.addressing_mode);
+                            self.program_counter = addr;
+                        }
+                        _ => {
+                            // Indirect
+                            let addr = self.read_mem_u16(self.program_counter);
+
+                            let indirect_ref = if addr & 0x00FF == 0x00FF {
+                                // 6502 page boundary bug
+                                // https://www.nesdev.org/obelisk-6502-guide/reference.html#JMP
+                                let little = self.read_mem(addr);
+                                let big = self.read_mem(addr & 0xFF00);
+                                u16::from_le_bytes([little, big])
+                            } else {
+                                self.read_mem_u16(addr)
+                            };
+
+                            self.program_counter = indirect_ref;
+                        }
+                    }
+                }
                 "PHP" => {
                     // Push Processor Status
                     self.status.set_flag(StatusFlag::B, true);
@@ -673,5 +697,24 @@ mod tests {
         cpu.write_mem(0x10, 0x41);
         cpu.load_and_execute(vec![0xE6, 0x10]);
         assert_eq!(cpu.read_mem(0x10), 0x42);
+    }
+
+    #[test]
+    fn test_jmp() {
+        let mut cpu = CPU::new();
+        // Absolute
+        cpu.load_and_execute(vec![0x4C, 0xFD, 0xCA]);
+        assert_eq!(cpu.program_counter, 0xCAFE);
+        // Indirect
+        cpu.write_mem_u16(0xCAFE, 0xCADA);
+        cpu.load_and_execute(vec![0x6C, 0xFE, 0xCA]);
+        assert_eq!(cpu.program_counter, 0xCADB);
+        // Indirect with page boundary bug
+        cpu.write_mem(0x3000, 0x20);
+        cpu.write_mem(0x30FF, 0x50);
+        cpu.write_mem(0x3100, 0x30);
+        cpu.load_and_execute(vec![0x6C, 0xFF, 0x30]);
+        assert_eq!(cpu.program_counter, 0x2051);
+
     }
 }
