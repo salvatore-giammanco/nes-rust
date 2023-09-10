@@ -511,6 +511,14 @@ impl CPU {
                     self.status
                         .update_zero_and_negative_registers(self.index_register_x);
                 }
+                "TAY" => {
+                    // Transfer Accumulator to register Y
+                    self.index_register_y = self.register_accumulator;
+
+                    self.status
+                        .update_zero_and_negative_registers(self.index_register_y);
+                }
+
                 _ => todo!(),
             }
 
@@ -545,13 +553,6 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA9, 0x00, 0x00]);
         assert_eq!(cpu.status.status & 0b0000_0010, 0b10);
-    }
-
-    #[test]
-    fn test_0xaa_tax_immediate_load() {
-        let mut cpu = CPU::new();
-        cpu.load_and_execute(vec![0xA9, 0x42, 0xAA, 0x00]);
-        assert_eq!(cpu.index_register_x, 0x42);
     }
 
     #[test]
@@ -915,5 +916,18 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_execute(vec![0xA0, 0x42, 0x8C, 0xFA, 0xFA]);
         assert_eq!(cpu.read_mem_u16(0xFAFA), 0x42);
+    }
+
+    #[test]
+    fn test_tax() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0x42, 0xAA, 0x00]);
+        assert_eq!(cpu.index_register_x, 0x42);
+    }
+    #[test]
+    fn test_tay() {
+        let mut cpu = CPU::new();
+        cpu.load_and_execute(vec![0xA9, 0x42, 0xA8]);
+        assert_eq!(cpu.index_register_y, 0x42);
     }
 }

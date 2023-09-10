@@ -176,6 +176,7 @@ lazy_static! {
         OpCode::new(0x94, "STY", 2, 4, AddressingMode::ZeroPage_Y),
         OpCode::new(0x8C, "STY", 3, 4, AddressingMode::Absolute),
         OpCode::new(0xAA, "TAX", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new(0xA8, "TAY", 1, 2, AddressingMode::NoneAddressing),
     ];
 
     pub static ref CPU_OPCODES_MAP: HashMap<u8, &'static OpCode> = {
