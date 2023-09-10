@@ -7,3 +7,15 @@
 
 
 This is my version of the NES emulator written in Rust.
+
+## Progress
+
+| check     | module  | progress |
+|-----------|---------|----------|
+| Done      | CPU     | 25 %     |
+| Not done  | BUS     | 27%      |
+| Not done  | ROM     | 35%      |
+| Not done  | PPU     | 85%      |
+| Not done  | GamePad | 90%      |
+| Not done  | APU     | 100%     |
+
