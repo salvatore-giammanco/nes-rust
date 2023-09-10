@@ -372,17 +372,6 @@ impl CPU {
                     self.status
                         .update_zero_and_negative_registers(self.index_register_x);
                 }
-                "INX" => {
-                    // Increment register X
-                    if self.index_register_x == 0xFF {
-                        self.index_register_x = 0;
-                    } else {
-                        self.index_register_x += 1;
-                    }
-
-                    self.status
-                        .update_zero_and_negative_registers(self.index_register_x);
-                }
                 "SBC" => {
                     // Subtract with carry
                     self.sbc(&opcode.addressing_mode);
