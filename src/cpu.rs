@@ -315,6 +315,11 @@ impl CPU {
             let opcode = opcodes
                 .get(&code)
                 .expect(&format!("Unknown opcode {:x}", code));
+            println!(
+                "{:#04X}| {}",
+                self.program_counter - 1,
+                opcode.label
+            );
             match opcode.label {
                 "ADC" => {
                     // Add with carry
@@ -521,7 +526,7 @@ impl CPU {
                     let pc: u16 = self.stack_pull_u16();
                     self.program_counter = pc;
                 }
-                "RTS" => self.program_counter = self.stack_pull_u16(),
+                "RTS" => self.program_counter = self.stack_pull_u16() + 1,
                 "SBC" => {
                     // Subtract with carry
                     self.sbc(&opcode.addressing_mode);
