@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::ops::{Add, BitAnd, BitOr, BitXor};
+use std::ops::{BitAnd, BitOr, BitXor};
 
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
@@ -45,6 +45,36 @@ impl CPU {
         }
     }
 
+
+    pub fn load_test(&mut self, program: Vec<u8>) {
+        self.memory[0x0600..(0x0600 + program.len())].copy_from_slice(&program[..]);
+        self.write_mem_u16(0xFFFC, 0x0600);
+    }
+
+    pub fn disassemble(&self, program: Vec<u8>) {
+        let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
+        let mut pos: usize = 0;
+        while pos < program.len() {
+            let addr = 0x600 + pos;
+            let opcode = opcodes.get(&program[pos]).expect(&format!("Unknown opcode {:x}", pos));
+            let mut args: Vec<u8> = Vec::new();
+            if opcode.bytes > 1 {
+                for i in 1..(opcode.bytes) {
+                    args.push(program[pos + i as usize]);
+                }
+            }
+            pos += opcode.bytes as usize;
+            println!(
+                "{:#04X}| {:#04X}: {:?} ({:02X?}) - {:?}",
+                addr,
+                opcode.opcode,
+                opcode.label,
+                args,
+                opcode.addressing_mode
+            );
+        }
+    }
+
     pub fn load_program(&mut self, program: Vec<u8>) {
         // TODO check the length of the program
         self.memory[0x8000..(0x8000 + program.len())].copy_from_slice(&program[..]);
@@ -66,7 +96,7 @@ impl CPU {
         self.execute();
     }
 
-    fn read_mem(&self, addr: u16) -> u8 {
+    pub fn read_mem(&self, addr: u16) -> u8 {
         self.memory[addr as usize]
     }
 
@@ -77,11 +107,11 @@ impl CPU {
         u16::from_le_bytes([little, big])
     }
 
-    fn write_mem(&mut self, addr: u16, value: u8) {
+    pub fn write_mem(&mut self, addr: u16, value: u8) {
         self.memory[addr as usize] = value;
     }
 
-    fn write_mem_u16(&mut self, addr: u16, value: u16) {
+    pub fn write_mem_u16(&mut self, addr: u16, value: u16) {
         // Writing 2 bytes in little endian
         let bytes = u16::to_le_bytes(value);
         for i in 0..bytes.len() {
@@ -268,8 +298,16 @@ impl CPU {
     }
 
     pub fn execute(&mut self) {
+        self.execute_with_callback(|_| {});
+    }
+
+    pub fn execute_with_callback<F>(&mut self, mut callback: F)
+    where
+        F: FnMut(&mut CPU),
+    {
         let ref opcodes: HashMap<u8, &'static OpCode> = *opcodes::CPU_OPCODES_MAP;
         loop {
+            callback(self);
             let code = self.fetch();
             self.program_counter += 1;
             let program_counter_state = self.program_counter;
@@ -277,7 +315,6 @@ impl CPU {
             let opcode = opcodes
                 .get(&code)
                 .expect(&format!("Unknown opcode {:x}", code));
-
             match opcode.label {
                 "ADC" => {
                     // Add with carry
