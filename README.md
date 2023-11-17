@@ -19,3 +19,6 @@ This is my version of the NES emulator written in Rust.
 | Not done  | GamePad | 90%      |
 | Not done  | APU     | 100%     |
 
+## Dev env setup
+
+Install SDL2 library and configure Rust bindings with this [simple guide](https://github.com/Rust-SDL2/rust-sdl2).
