@@ -272,7 +272,9 @@ impl CPU {
     pub fn branch(&mut self, condition: bool) {
         if condition {
             let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
-            self.program_counter += 1 + relative_displacement as u16;
+            self.program_counter = self.program_counter
+                .wrapping_add(1)
+                .wrapping_add(relative_displacement as u16);
         }
     }
 
