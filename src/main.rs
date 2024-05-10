@@ -2,6 +2,7 @@ extern crate sdl2;
 
 use nes_emulator::cpu::CPU;
 
+use nes_emulator::cpu::Mem;
 use rand::Rng;
 use sdl2::event::Event;
 use sdl2::EventPump;
@@ -109,6 +110,7 @@ pub fn main() -> Result<(), String> {
     let mut cpu = CPU::new();
     cpu.load_test(game_code);
     cpu.reset();
+    cpu.program_counter = 0x0600;
 
     let mut screen_state = [0 as u8; 32 * 3 * 32];
     let mut rng = rand::thread_rng();
