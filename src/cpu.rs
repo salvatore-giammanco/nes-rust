@@ -3,6 +3,7 @@ use std::ops::{BitAnd, BitOr, BitXor};
 
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
+use crate::bus::Bus;
 
 const STACK: u16 = 0x100;
 pub const STACK_RESET: u8 = 0xFF;
@@ -14,7 +15,7 @@ pub struct CPU {
     pub index_register_x: u8,
     pub index_register_y: u8,
     pub status: ProcessorStatus,
-    memory: [u8; 0xFFFF],
+    pub bus: Bus,
 }
 
 #[derive(Debug)]
@@ -32,6 +33,45 @@ pub enum AddressingMode {
     NoneAddressing,
 }
 
+pub trait Mem {
+    fn read_mem(&self, addr: u16) -> u8;
+
+    fn read_mem_u16(&self, addr: u16) -> u16 {
+        // Reading 2 bytes in little endian
+        let little = self.read_mem(addr);
+        let big = self.read_mem(addr + 1);
+        u16::from_le_bytes([little, big])
+    }
+
+    fn write_mem(&mut self, addr: u16, value: u8);
+
+    fn write_mem_u16(&mut self, addr: u16, value: u16) {
+        // Writing 2 bytes in little endian
+        let bytes = u16::to_le_bytes(value);
+        for i in 0..bytes.len() {
+            self.write_mem(addr + i as u16, bytes[i])
+        }
+    }
+}
+
+impl Mem for CPU {
+    fn read_mem(&self, addr: u16) -> u8 {
+        self.bus.read_mem(addr)
+    }
+
+    fn read_mem_u16(&self, addr: u16) -> u16 {
+        self.bus.read_mem_u16(addr)
+    }
+
+    fn write_mem(&mut self, addr: u16, value: u8) {
+        self.bus.write_mem(addr, value);
+    }
+
+    fn write_mem_u16(&mut self, addr: u16, value: u16) {
+        self.bus.write_mem_u16(addr, value);
+    }
+}
+
 impl CPU {
     pub fn new() -> Self {
         Self {
@@ -41,13 +81,15 @@ impl CPU {
             index_register_x: 0,
             index_register_y: 0,
             status: ProcessorStatus::new(),
-            memory: [0; 0xFFFF],
+            bus: Bus::new(),
         }
     }
 
 
     pub fn load_test(&mut self, program: Vec<u8>) {
-        self.memory[0x0600..(0x0600 + program.len())].copy_from_slice(&program[..]);
+        for i in 0..(program.len() as u16) {
+            self.write_mem(0x0600 + i, program[i as usize]);
+        }
         self.write_mem_u16(0xFFFC, 0x0600);
     }
 
@@ -77,7 +119,9 @@ impl CPU {
 
     pub fn load_program(&mut self, program: Vec<u8>) {
         // TODO check the length of the program
-        self.memory[0x8000..(0x8000 + program.len())].copy_from_slice(&program[..]);
+        for i in 0..(program.len() as u16) {
+            self.write_mem(0x8000 + i, program[i as usize]);
+        }
         self.write_mem_u16(0xFFFC, 0x8000);
     }
 
@@ -96,31 +140,8 @@ impl CPU {
         self.execute();
     }
 
-    pub fn read_mem(&self, addr: u16) -> u8 {
-        self.memory[addr as usize]
-    }
-
-    pub fn read_mem_u16(&self, addr: u16) -> u16 {
-        // Reading 2 bytes in little endian
-        let little = self.read_mem(addr);
-        let big = self.read_mem(addr + 1);
-        u16::from_le_bytes([little, big])
-    }
-
-    pub fn write_mem(&mut self, addr: u16, value: u8) {
-        self.memory[addr as usize] = value;
-    }
-
-    pub fn write_mem_u16(&mut self, addr: u16, value: u16) {
-        // Writing 2 bytes in little endian
-        let bytes = u16::to_le_bytes(value);
-        for i in 0..bytes.len() {
-            self.write_mem(addr + i as u16, bytes[i])
-        }
-    }
-
     pub fn fetch(&self) -> u8 {
-        self.memory[self.program_counter as usize]
+        self.read_mem(self.program_counter)
     }
 
     pub fn stack_push(&mut self, value: u8) {
@@ -879,11 +900,11 @@ mod tests {
         cpu.load_and_execute(vec![0x6C, 0xFE, 0xCA]);
         assert_eq!(cpu.program_counter, 0xCADB);
         // Indirect with page boundary bug
-        cpu.write_mem(0x3000, 0x20);
-        cpu.write_mem(0x30FF, 0x50);
-        cpu.write_mem(0x3100, 0x30);
-        cpu.load_and_execute(vec![0x6C, 0xFF, 0x30]);
-        assert_eq!(cpu.program_counter, 0x2051);
+        cpu.write_mem(0x4000, 0x40);
+        cpu.write_mem(0x40FF, 0x50);
+        cpu.write_mem(0x4100, 0x30);
+        cpu.load_and_execute(vec![0x6C, 0xFF, 0x40]);
+        assert_eq!(cpu.program_counter, 0x4051);
     }
 
     #[test]
