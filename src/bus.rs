@@ -1,19 +1,27 @@
 use crate::cpu::Mem;
+use crate::rom::ROM;
 
 const RAM: u16 = 0x0000;
 const RAM_MIRRORS_END: u16 = 0x1FFF;
 const PPU_REGISTERS: u16 = 0x2000;
 const PPU_REGISTERS_MIRRORS_END: u16 = 0x3FFF;
+const ROM_START_IN_MEMORY: u16 = 0x8000;
 
 pub struct Bus {
-    pub cpu_vram: [u8; 0xFFFF],
+    cpu_vram: [u8; 0xFFFF],
+    rom: Option<ROM>,
 }
 
 impl Bus {
-    pub fn new() -> Self {
+    pub fn new(rom: ROM) -> Self {
         Self {
             cpu_vram: [0; 0xFFFF],
+            rom: Some(rom),
         }
+    }
+
+    pub fn load_rom(&mut self, rom: ROM) {
+        self.rom = Some(rom);
     }
 }
 
@@ -29,10 +37,12 @@ impl Mem for Bus {
                 println!("PPU register read at {:#X}", addr);
                 todo!("PPU is not supported yet - read")
             }
+            0x8000 ..= 0xFFFF => {
+                self.rom.as_ref().unwrap().prg_rom[(addr - ROM_START_IN_MEMORY) as usize]
+            }
             _ => {
-                // println!("Ignoring mem access at {:#X}", addr);
-                // Bypassing because there's no ROM emulation yet
-                self.cpu_vram[addr as usize]
+                println!("Ignoring mem access at {:#X}", addr);
+                0
             }
         }
     }
@@ -48,10 +58,12 @@ impl Mem for Bus {
                 println!("PPU register write at {:#X}", addr);
                 todo!("PPU is not supported yet - write")
             }
+            ROM_START_IN_MEMORY ..= 0xFFFF => {
+                // panic!("Write to ROM at {:#X}: {:#X}", addr, data);
+                self.rom.as_mut().unwrap().prg_rom[(addr - ROM_START_IN_MEMORY) as usize] = data;
+            }
             _ => {
-                // println!("Ignoring mem write-access at {:#X}: {:#X}", addr, data);
-                // Bypassing because there's no ROM emulation yet
-                self.cpu_vram[addr as usize] = data;
+                println!("Ignoring mem write-access at {:#X}: {:#X}", addr, data);
             }
         }
     }

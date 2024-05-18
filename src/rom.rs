@@ -2,7 +2,6 @@ const NES_TAG: [u8; 4] = [0x4E, 0x45, 0x53, 0x1A];
 const PRG_ROM_PAGE_SIZE: usize = 16384;
 const CHR_ROM_PAGE_SIZE: usize = 8192;
 const TRAINER_SIZE: usize = 512;
-const ROM_START_IN_MEMORY: usize = 0x8000;
 
 #[derive(Debug, PartialEq)]
 pub enum Mirroring {
@@ -12,16 +11,31 @@ pub enum Mirroring {
 }
 
 #[derive(Debug, PartialEq)]
-struct ROM {
+pub struct ROM {
     trainer: bool,
     mapper: u8,
     screen_mirroring: Mirroring,
-    prg_rom: Vec<u8>,
-    chr_rom: Vec<u8>,
+    pub prg_rom: Vec<u8>,
+    pub chr_rom: Vec<u8>,
 }
 
 
 impl ROM {
+     pub fn from_file(file_path: &str) -> Result<Self, String> {
+        let raw = std::fs::read(file_path).map_err(|e| e.to_string())?;
+        Self::new(raw)
+    }
+
+    pub fn empty() -> Self {
+        Self {
+            trainer: false,
+            mapper: 0,
+            screen_mirroring: Mirroring::Horizontal,
+            prg_rom: vec![0; 0x7FFF],
+            chr_rom: vec![], // TODO: This is unused; Everything is stored into PRG ROM. Don't even parse it
+        }
+    }
+
     pub fn new(raw: Vec<u8>) -> Result<Self, String> {
         // iNES Format
         if raw[0..4] != NES_TAG {
