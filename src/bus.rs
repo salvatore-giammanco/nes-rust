@@ -38,7 +38,14 @@ impl Mem for Bus {
                 todo!("PPU is not supported yet - read")
             }
             0x8000 ..= 0xFFFF => {
-                self.rom.as_ref().unwrap().prg_rom[(addr - ROM_START_IN_MEMORY) as usize]
+                let rom = self.rom.as_ref().unwrap();
+                let mut addr = addr - 0x8000;
+
+                // Mirroring for 16KB PRG ROM
+                if rom.prg_rom.len() == 0x4000 && addr >= 0x4000 {
+                    addr = addr % 0x4000;
+                }
+                rom.prg_rom[addr as usize]
             }
             _ => {
                 println!("Ignoring mem access at {:#X}", addr);
@@ -59,6 +66,7 @@ impl Mem for Bus {
                 todo!("PPU is not supported yet - write")
             }
             ROM_START_IN_MEMORY ..= 0xFFFF => {
+                // TODO: Add unsafe mode to explicitly allow writing to ROM
                 // panic!("Write to ROM at {:#X}: {:#X}", addr, data);
                 self.rom.as_mut().unwrap().prg_rom[(addr - ROM_START_IN_MEMORY) as usize] = data;
             }

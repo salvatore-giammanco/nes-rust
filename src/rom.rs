@@ -32,7 +32,7 @@ impl ROM {
             mapper: 0,
             screen_mirroring: Mirroring::Horizontal,
             prg_rom: vec![0; 0x7FFF],
-            chr_rom: vec![], // TODO: This is unused; Everything is stored into PRG ROM. Don't even parse it
+            chr_rom: vec![],
         }
     }
 
@@ -71,7 +71,6 @@ impl ROM {
         let prg_rom_size: usize = raw[4] as usize * PRG_ROM_PAGE_SIZE;
         let prg_rom_start = 16 + trainer;
         let prg_rom = raw[prg_rom_start..prg_rom_start + prg_rom_size].to_vec();
-        
         // CHR ROM
         let chr_rom_size: usize = raw[5] as usize * CHR_ROM_PAGE_SIZE;
         let chr_rom_start = prg_rom_start + prg_rom_size;
