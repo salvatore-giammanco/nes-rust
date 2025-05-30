@@ -1,3 +1,5 @@
+pub const STATUS_RESET: u8 = 0b0010_0000;
+
 pub enum StatusFlag {
     Carry,            // Bit 0
     Zero,             // Bit 1
@@ -5,8 +7,8 @@ pub enum StatusFlag {
     Decimal,          // Bit 3
     B,                // Bit 4
     // Bit 5 (always set to 1)
-    Overflow, // Bit 6
-    Negative, // Bit 7
+    Overflow,         // Bit 6
+    Negative,         // Bit 7
 }
 
 pub struct FlagMask {
@@ -21,7 +23,7 @@ pub struct ProcessorStatus {
 impl ProcessorStatus {
     pub fn new() -> Self {
         Self {
-            status: 0b0010_0000,
+            status: STATUS_RESET,
         }
     }
 
