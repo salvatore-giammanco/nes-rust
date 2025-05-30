@@ -7,3 +7,6 @@
 
 # Roms disassembled files
 /roms/*.txt
+
+# Debug output directory
+/output
