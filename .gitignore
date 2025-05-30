@@ -4,3 +4,6 @@
 
 # Rust
 /target
+
+# Roms disassembled files
+/roms/*.txt
