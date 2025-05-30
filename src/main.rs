@@ -11,6 +11,8 @@ use sdl2::EventPump;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::Color;
 use sdl2::pixels::PixelFormatEnum;
+use std::env;
+
 
 fn read_screen_state(cpu: &CPU, frame: &mut [u8; 32 * 3 * 32]) -> bool {
     let mut frame_idx = 0;
@@ -68,6 +70,14 @@ fn color(byte: u8) -> Color {
 
 
 pub fn main() -> Result<(), String> {
+    let args: Vec<String> = env::args().collect();
+
+    // Check if a ROM path is provided
+    if args.len() < 2 {
+        eprintln!("Usage: {} <path_to_rom>", args[0]);
+        return Err("No ROM path provided".to_string());
+    }
+
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
     let window = video_subsystem
@@ -83,7 +93,7 @@ pub fn main() -> Result<(), String> {
     let mut texture = creator
         .create_texture_target(PixelFormatEnum::RGB24, 32, 32).unwrap();
     
-    let bus = Bus::new(ROM::from_file("roms/snake.nes").unwrap());
+    let bus = Bus::new(ROM::from_file(&args[1]).unwrap());
     let mut cpu = CPU::new(bus);
     cpu.reset();
 
