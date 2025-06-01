@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::env;
 use std::ops::{BitAnd, BitOr, BitXor};
 
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
 use crate::bus::Bus;
+
 
 const STACK: u16 = 0x100;
 pub const STACK_RESET: u8 = 0xFF;
@@ -16,6 +18,7 @@ pub struct CPU {
     pub index_register_y: u8,
     pub status: ProcessorStatus,
     pub bus: Bus,
+    pub debug: bool,
 }
 
 #[derive(Debug)]
@@ -74,6 +77,10 @@ impl Mem for CPU {
 
 impl CPU {
     pub fn new(bus: Bus) -> Self {
+        let debug: bool = match env::var("DEBUG") {
+            Ok(_) => true,
+            Err(_) => false,
+        };
         Self {
             program_counter: 0,
             stack_pointer: STACK_RESET,
@@ -81,7 +88,8 @@ impl CPU {
             index_register_x: 0,
             index_register_y: 0,
             status: ProcessorStatus::new(),
-            bus: bus,
+            bus,
+            debug,
         }
     }
 
@@ -324,6 +332,24 @@ impl CPU {
         self.execute_with_callback(|_| {});
     }
 
+    pub fn debug_cpu_status(&self, opcode: &OpCode) {
+        if self.debug {
+            let mut status: String = String::new();
+
+            status = format!(
+                "{:#04X}  {}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+                self.program_counter - 1,
+                opcode.label,
+                self.register_accumulator,
+                self.index_register_x,
+                self.index_register_y,
+                self.status.status,
+                self.stack_pointer,
+            );
+            println!("{}", status);
+        }
+    }
+
     pub fn execute_with_callback<F>(&mut self, mut callback: F)
     where
         F: FnMut(&mut CPU),
@@ -338,11 +364,9 @@ impl CPU {
             let opcode = opcodes
                 .get(&code)
                 .expect(&format!("Unknown opcode {:x}", code));
-            println!(
-                "{:#04X}| {}",
-                self.program_counter - 1,
-                opcode.label
-            );
+
+            self.debug_cpu_status(&opcode);
+
             match opcode.label {
                 "ADC" => {
                     // Add with carry
