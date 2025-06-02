@@ -1,4 +1,4 @@
-pub const STATUS_RESET: u8 = 0b0010_0000;
+pub const STATUS_RESET: u8 = 0b0010_0100;
 
 pub enum StatusFlag {
     Carry,            // Bit 0
