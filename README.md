@@ -22,3 +22,7 @@ This is my version of the NES emulator written in Rust.
 ## Dev env setup
 
 Install SDL2 library and configure Rust bindings with this [simple guide](https://github.com/Rust-SDL2/rust-sdl2).
+
+## Testing ROMs
+
+- `nestest.nes`: program counter needs to be set to `0xC000`
