@@ -8,7 +8,7 @@ use crate::bus::Bus;
 
 
 const STACK: u16 = 0x100;
-pub const STACK_RESET: u8 = 0xFF;
+pub const STACK_RESET: u8 = 0xFD;
 
 pub struct CPU {
     pub program_counter: u16,
