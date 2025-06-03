@@ -333,21 +333,39 @@ impl CPU {
     }
 
     pub fn debug_cpu_status(&self, opcode: &OpCode) {
-        if self.debug {
-            let mut status: String = String::new();
-
-            status = format!(
-                "{:#04X}  {}  A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
-                self.program_counter - 1,
-                opcode.label,
-                self.register_accumulator,
-                self.index_register_x,
-                self.index_register_y,
-                self.status.status,
-                self.stack_pointer,
-            );
-            println!("{}", status);
+        if !self.debug {
+            return;
         }
+
+        let mut opcode_dump = vec![];
+        opcode_dump.push(opcode.opcode);
+
+        for i in 1..opcode.bytes {
+            opcode_dump.push(self.read_mem(self.program_counter + i as u16 - 1));
+        }
+        let opcode_dump_str: String = opcode_dump
+            .iter()
+            .map(|b| format!("{:02X}", b))
+            .collect::<Vec<String>>()
+            .join(" ");
+
+        let mut status: String = String::new();
+        let space_padding_dump = " ".repeat(10 - opcode_dump_str.len());
+        let space_padding_assembly = " ".repeat(28);
+        status = format!(
+            "{:04X}  {}{}{}{}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+            self.program_counter - 1,
+            opcode_dump_str,
+            space_padding_dump,
+            opcode.label,
+            space_padding_assembly,
+            self.register_accumulator,
+            self.index_register_x,
+            self.index_register_y,
+            self.status.status,
+            self.stack_pointer,
+        );
+        println!("{}", status);
     }
 
     pub fn execute_with_callback<F>(&mut self, mut callback: F)
