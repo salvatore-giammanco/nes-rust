@@ -78,26 +78,26 @@ pub fn main() -> Result<(), String> {
         return Err("No ROM path provided".to_string());
     }
 
-    let sdl_context = sdl2::init().unwrap();
-    let video_subsystem = sdl_context.video().unwrap();
+    let sdl_context = sdl2::init()?;
+    let video_subsystem = sdl_context.video()?;
     let window = video_subsystem
         .window("Snake game", (32.0 * 10.0) as u32, (32.0 * 10.0) as u32)
         .position_centered()
         .build().unwrap();
  
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-    let mut event_pump = sdl_context.event_pump().unwrap();
-    canvas.set_scale(10.0, 10.0).unwrap();
+    let mut event_pump = sdl_context.event_pump()?;
+    canvas.set_scale(10.0, 10.0)?;
 
     let creator = canvas.texture_creator();
     let mut texture = creator
         .create_texture_target(PixelFormatEnum::RGB24, 32, 32).unwrap();
     
-    let bus = Bus::new(ROM::from_file(&args[1]).unwrap());
+    let bus = Bus::new(ROM::from_file(&args[1])?);
     let mut cpu = CPU::new(bus);
     cpu.reset();
 
-    let mut screen_state = [0 as u8; 32 * 3 * 32];
+    let mut screen_state = [0u8; 32 * 3 * 32];
     let mut rng = rand::thread_rng();
 
     cpu.execute_with_callback(move |cpu| {

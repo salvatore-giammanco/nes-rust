@@ -349,7 +349,7 @@ impl CPU {
             .collect::<Vec<String>>()
             .join(" ");
 
-        let mut status: String = String::new();
+        let status: String;
         let space_padding_dump = " ".repeat(10 - opcode_dump_str.len());
         let space_padding_assembly = " ".repeat(28);
         status = format!(
@@ -657,7 +657,7 @@ mod tests {
     #[fixture]
     pub fn cpu() -> CPU { 
         let bus = Bus::new(ROM::empty());
-        let mut cpu = CPU::new(bus);
+        let cpu = CPU::new(bus);
         cpu
     }
 
