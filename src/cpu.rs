@@ -539,7 +539,9 @@ impl CPU {
                 }
                 "PHP" => {
                     // Push Processor Status
-                    self.stack_push(self.status.status);
+                    // Setting bit 5 as 1  (hardware behavior)
+                    // https://www.masswerk.at/6502/6502_instruction_set.html#PHP
+                    self.stack_push(self.status.status | 0b0001_0000);
                 }
                 "PLA" => {
                     // Pull Accumulator
