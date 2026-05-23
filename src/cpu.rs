@@ -552,7 +552,9 @@ impl CPU {
                 }
                 "PLP" => {
                     // Pull Processor Status
-                    let status: u8 = self.stack_pull();
+                    // Ignore bit 5 (hardware behavior)
+                    // https://www.masswerk.at/6502/6502_instruction_set.html#PLP
+                    let status: u8 = self.stack_pull() & 0b1110_1111;
                     self.status.set_from_byte(status);
                 }
                 "ROL" => {
