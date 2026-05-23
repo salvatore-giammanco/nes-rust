@@ -68,7 +68,8 @@ impl ProcessorStatus {
     }
 
     pub fn set_from_byte(&mut self, byte: u8) {
-        self.status = byte;
+        // Force bit 5 (hardwired) to 1
+        self.status = byte | 0b0010_0000;
     }
 
     pub fn get_flag(&self, flag: StatusFlag) -> bool {
