@@ -539,7 +539,6 @@ impl CPU {
                 }
                 "PHP" => {
                     // Push Processor Status
-                    self.status.set_flag(StatusFlag::B, true);
                     self.stack_push(self.status.status);
                 }
                 "PLA" => {
