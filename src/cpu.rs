@@ -547,6 +547,8 @@ impl CPU {
                     // Pull Accumulator
                     let value = self.stack_pull();
                     self.load_accumulator(value);
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "PLP" => {
                     // Pull Processor Status
