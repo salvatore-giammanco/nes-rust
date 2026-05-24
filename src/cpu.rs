@@ -417,11 +417,22 @@ impl CPU {
                 "BCS" => self.branch(self.status.get_flag(StatusFlag::Carry)),
                 "BEQ" => self.branch(self.status.get_flag(StatusFlag::Zero)),
                 "BIT" => {
+                    // Test Bits in Memory with Accumulator
+                    // Bit 6 and 7 of the operand are set respectively to bits 6 and 7 of the status
+                    // register (Overflow and Negative)
+                    // https://www.masswerk.at/6502/6502_instruction_set.html#BIT
+
                     let addr = self.get_operand_address(&opcode.addressing_mode);
-                    let result = self.register_accumulator.bitand(self.read_mem(addr));
-                    let overflow = result & 0x40 != 0;
+                    let operand = self.read_mem(addr);
+                    let result = self.register_accumulator.bitand(&operand);
+
+                    let overflow = operand & 0b0100_0000 != 0;
                     self.status.set_flag(StatusFlag::Overflow, overflow);
-                    self.status.update_zero_and_negative_registers(result);
+
+                    let negative = operand & 0b1000_0000 != 0;
+                    self.status.set_flag(StatusFlag::Negative, negative);
+
+                    self.status.update_zero_register(result);
                 }
                 "BMI" => self.branch(self.status.get_flag(StatusFlag::Negative)),
                 "BNE" => self.branch(!self.status.get_flag(StatusFlag::Zero)),
