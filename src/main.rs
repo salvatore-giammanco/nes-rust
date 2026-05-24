@@ -56,18 +56,65 @@ fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
 
 fn color(byte: u8) -> Color {
     match byte {
-        0 => sdl2::pixels::Color::BLACK,
-        1 => sdl2::pixels::Color::WHITE,
-        2 | 9 => sdl2::pixels::Color::GREY,
-        3 | 10 => sdl2::pixels::Color::RED,
-        4 | 11 => sdl2::pixels::Color::GREEN,
-        5 | 12 => sdl2::pixels::Color::BLUE,
-        6 | 13 => sdl2::pixels::Color::MAGENTA,
-        7 | 14 => sdl2::pixels::Color::YELLOW,
-        _ => sdl2::pixels::Color::CYAN,
+        0 => Color::BLACK,
+        1 => Color::WHITE,
+        2 | 9 => Color::GREY,
+        3 | 10 => Color::RED,
+        4 | 11 => Color::GREEN,
+        5 | 12 => Color::BLUE,
+        6 | 13 => Color::MAGENTA,
+        7 | 14 => Color::YELLOW,
+        _ => Color::CYAN,
     }
  }
 
+pub fn run_snake_test() -> Result<(), String> {
+    let sdl_context = sdl2::init()?;
+    let video_subsystem = sdl_context.video()?;
+    let window = video_subsystem
+        .window("Snake game", (32.0 * 10.0) as u32, (32.0 * 10.0) as u32)
+        .position_centered()
+        .build().unwrap();
+
+    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
+    let mut event_pump = sdl_context.event_pump()?;
+    canvas.set_scale(10.0, 10.0)?;
+
+    let creator = canvas.texture_creator();
+    let mut texture = creator
+        .create_texture_target(PixelFormatEnum::RGB24, 32, 32).unwrap();
+
+    let bus = Bus::new(ROM::from_file("roms/snake.nes")?);
+    let mut cpu = CPU::new(bus);
+    cpu.reset();
+
+    let mut screen_state = [0u8; 32 * 3 * 32];
+    let mut rng = rand::thread_rng();
+
+    cpu.execute_with_callback(move |cpu| {
+        handle_user_input(cpu, &mut event_pump);
+        cpu.write_mem(0xfe, rng.gen_range(1..16));
+
+        if read_screen_state(cpu, &mut screen_state) {
+            texture.update(None, &screen_state, 32 * 3).unwrap();
+            canvas.copy(&texture, None, None).unwrap();
+            canvas.present();
+        }
+
+        ::std::thread::sleep(std::time::Duration::new(0, 70_000));
+    });
+    Ok(())
+}
+
+pub fn run_nestest() -> Result<(), String> {
+    let bus = Bus::new(ROM::from_file("roms/nestest.nes")?);
+    let mut cpu = CPU::new(bus);
+    cpu.program_counter_override = Some(0xC000);
+    cpu.reset();
+
+    cpu.execute();
+    Ok(())
+}
 
 pub fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().collect();
@@ -78,39 +125,10 @@ pub fn main() -> Result<(), String> {
         return Err("No ROM path provided".to_string());
     }
 
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
-    let window = video_subsystem
-        .window("Snake game", (32.0 * 10.0) as u32, (32.0 * 10.0) as u32)
-        .position_centered()
-        .build().unwrap();
- 
-    let mut canvas = window.into_canvas().present_vsync().build().unwrap();
-    let mut event_pump = sdl_context.event_pump()?;
-    canvas.set_scale(10.0, 10.0)?;
-
-    let creator = canvas.texture_creator();
-    let mut texture = creator
-        .create_texture_target(PixelFormatEnum::RGB24, 32, 32).unwrap();
-    
-    let bus = Bus::new(ROM::from_file(&args[1])?);
-    let mut cpu = CPU::new(bus);
-    cpu.reset();
-
-    let mut screen_state = [0u8; 32 * 3 * 32];
-    let mut rng = rand::thread_rng();
-
-    cpu.execute_with_callback(move |cpu| {
-        handle_user_input(cpu, &mut event_pump);
-        cpu.write_mem(0xfe, rng.gen_range(1..16));
- 
-        if read_screen_state(cpu, &mut screen_state) {
-            texture.update(None, &screen_state, 32 * 3).unwrap();
-            canvas.copy(&texture, None, None).unwrap();
-            canvas.present();
-        }
- 
-        ::std::thread::sleep(std::time::Duration::new(0, 70_000));
-    });
+    match args[1].as_str() {
+        "snake_test" => run_snake_test()?,
+        "nestest" => run_nestest()?,
+        _ => eprintln!("Can't read all ROMs yet!")
+    };
     Ok(())
 }

@@ -25,4 +25,13 @@ Install SDL2 library and configure Rust bindings with this [simple guide](https:
 
 ## Testing ROMs
 
-- `nestest.nes`: program counter needs to be set to `0xC000`
+### Snake test ROM
+
+```shell
+cargo run snake_test
+```
+
+### Nestest ROM
+```shell
+DEBUG=1 cargo run nestest
+```

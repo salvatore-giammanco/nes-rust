@@ -12,6 +12,8 @@ pub const STACK_RESET: u8 = 0xFD;
 
 pub struct CPU {
     pub program_counter: u16,
+    // Used to start certain programs, like nestest, from specific points
+    pub program_counter_override: Option<u16>,
     pub stack_pointer: u8,
     pub register_accumulator: u8,
     pub index_register_x: u8,
@@ -83,6 +85,7 @@ impl CPU {
         };
         Self {
             program_counter: 0,
+            program_counter_override: None,
             stack_pointer: STACK_RESET,
             register_accumulator: 0,
             index_register_x: 0,
@@ -134,7 +137,12 @@ impl CPU {
     }
 
     pub fn reset(&mut self) {
-        self.program_counter = self.read_mem_u16(0xFFFC); // Address at 0xFFFC 2 bytes little endian
+        if self.program_counter_override != None {
+            self.program_counter = self.program_counter_override.unwrap()
+        } else {
+            self.program_counter = self.read_mem_u16(0xFFFC); // Address at 0xFFFC 2 bytes little endian
+        }
+
         self.stack_pointer = STACK_RESET;
         self.register_accumulator = 0;
         self.index_register_x = 0;
@@ -349,15 +357,43 @@ impl CPU {
             .collect::<Vec<String>>()
             .join(" ");
 
-        let status: String;
         let space_padding_dump = " ".repeat(10 - opcode_dump_str.len());
-        let space_padding_assembly = " ".repeat(28);
-        status = format!(
-            "{:04X}  {}{}{}{}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
+
+        let assembly: String = match opcode.addressing_mode {
+            AddressingMode::Immediate => format!("#${:02X}", opcode_dump[1]),
+            AddressingMode::ZeroPage => format!("${:02X} = {:02X}", opcode_dump[1], self.read_mem(opcode_dump[1] as u16)),
+            AddressingMode::ZeroPage_X => format!("${:02X},X", opcode_dump[1]),
+            AddressingMode::ZeroPage_Y => format!("${:02X},Y", opcode_dump[1]),
+            AddressingMode::Absolute => format!("${:04X}", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
+            AddressingMode::Absolute_X => format!("${:04X},X", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
+            AddressingMode::Absolute_Y => format!("${:04X},Y", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
+            AddressingMode::Indirect_X => format!("(${:02X},X)", opcode_dump[1]),
+            AddressingMode::Indirect_Y => format!("(${:02X}),Y", opcode_dump[1]),
+            AddressingMode::NoneAddressing => {
+                match opcode.label {
+                    "BCS" | "BCC" | "BEQ" | "BNE" | "BVS" | "BVC" | "BPL" | "BMI" => {
+                        // These operations branch if a certain condition is true (for which we do
+                        // not care about here) to a location which is the result of adding the
+                        // relative displacement to the program counter
+                        let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
+                        let value = self.program_counter
+                            .wrapping_add(1)
+                            .wrapping_add(relative_displacement as u16);
+                        format!("${:04X}", value)
+                    },
+                    _ => "".parse().unwrap()
+                }
+            },
+        };
+
+        let space_padding_assembly = " ".repeat(28 - assembly.len());
+        let status = format!(
+            "{:04X}  {}{}{} {}{}A:{:02X} X:{:02X} Y:{:02X} P:{:02X} SP:{:02X}",
             self.program_counter - 1,
             opcode_dump_str,
             space_padding_dump,
             opcode.label,
+            assembly,
             space_padding_assembly,
             self.register_accumulator,
             self.index_register_x,
