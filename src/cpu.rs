@@ -364,7 +364,12 @@ impl CPU {
             AddressingMode::ZeroPage => format!("${:02X} = {:02X}", opcode_dump[1], self.read_mem(opcode_dump[1] as u16)),
             AddressingMode::ZeroPage_X => format!("${:02X},X", opcode_dump[1]),
             AddressingMode::ZeroPage_Y => format!("${:02X},Y", opcode_dump[1]),
-            AddressingMode::Absolute => format!("${:04X}", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
+            AddressingMode::Absolute => {
+                match opcode.label {
+                    "STX" => format!("${:04X} = {:02X}", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]), self.read_mem(opcode_dump[1] as u16)),
+                    _ => format!("${:04X}", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]))
+                }
+            },
             AddressingMode::Absolute_X => format!("${:04X},X", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
             AddressingMode::Absolute_Y => format!("${:04X},Y", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
             AddressingMode::Indirect_X => format!("(${:02X},X)", opcode_dump[1]),
@@ -686,7 +691,6 @@ impl CPU {
                 "TXS" => {
                     // Transfer X to Stack Pointer
                     self.stack_pointer = self.index_register_x;
-                    self.status.update_zero_and_negative_registers(self.index_register_x);
                 },
                 "TYA" => self.load_accumulator(self.index_register_y),
 
