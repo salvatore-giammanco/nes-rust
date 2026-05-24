@@ -365,9 +365,10 @@ impl CPU {
             AddressingMode::ZeroPage_X => format!("${:02X},X", opcode_dump[1]),
             AddressingMode::ZeroPage_Y => format!("${:02X},Y", opcode_dump[1]),
             AddressingMode::Absolute => {
+                let memory_address = u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]);
                 match opcode.label {
-                    "STX" => format!("${:04X} = {:02X}", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]), self.read_mem(opcode_dump[1] as u16)),
-                    _ => format!("${:04X}", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]))
+                    "STX" | "LDX" | "LDA" => format!("${:04X} = {:02X}", memory_address, self.read_mem_u16(memory_address) as u8),
+                    _ => format!("${:04X}", memory_address)
                 }
             },
             AddressingMode::Absolute_X => format!("${:04X},X", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
