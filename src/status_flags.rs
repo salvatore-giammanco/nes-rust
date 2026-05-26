@@ -83,7 +83,7 @@ impl ProcessorStatus {
 
     pub fn update_zero_and_negative_registers(&mut self, value: u8) {
         self.set_flag(StatusFlag::Zero, value == 0);
-        self.set_flag(StatusFlag::Negative, value & 0x80 != 0);
+        self.set_flag(StatusFlag::Negative, value & 0b1000_0000 != 0);
     }
 }
 

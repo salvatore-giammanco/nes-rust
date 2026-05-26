@@ -172,8 +172,8 @@ impl CPU {
 
     pub fn stack_push_u16(&mut self, value: u16) {
         let bytes = u16::to_le_bytes(value);
-        self.stack_push(bytes[0]);
         self.stack_push(bytes[1]);
+        self.stack_push(bytes[0]);
     }
 
     pub fn stack_pull(&mut self) -> u8 {
@@ -186,9 +186,9 @@ impl CPU {
     }
 
     pub fn stack_pull_u16(&mut self) -> u16 {
-        let little: u8 = self.stack_pull();
-        let big: u8 = self.stack_pull();
-        u16::from_le_bytes([big, little])
+        let pcl: u8 = self.stack_pull();
+        let pch: u8 = self.stack_pull();
+        u16::from_le_bytes([pcl, pch])
     }
 
     pub fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
