@@ -387,6 +387,9 @@ impl CPU {
                             .wrapping_add(relative_displacement as u16);
                         format!("${:04X}", value)
                     },
+                    "LSR" | "ASL" | "ROR" => {
+                      "A".to_string()
+                    },
                     _ => "".parse().unwrap()
                 }
             },
