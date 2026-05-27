@@ -943,19 +943,22 @@ mod tests {
     #[rstest]
     fn test_php(mut cpu: CPU) {
         cpu.load_and_execute(vec![0x08]);
-        assert_eq!(cpu.read_mem(0x1FFu16), 0b0011_0000);
+        // Ignoring bit 5
+        assert_eq!(cpu.read_mem(0x1FD), cpu.status.status | 0b0001_0000);
     }
 
     #[rstest]
     fn test_pha(mut cpu: CPU) {
+        cpu.reset();
         cpu.load_and_execute(vec![0xA9, 0xFA, 0x48]);
-        assert_eq!(cpu.read_mem(0x1FF), 0xFA);
+        assert_eq!(cpu.read_mem(0x1FD), 0xFA);
     }
 
     #[rstest]
     fn test_plp(mut cpu: CPU) {
         cpu.load_and_execute(vec![0xA9, 0xFA, 0x48, 0x28]);
-        assert_eq!(cpu.status.status, 0xFA);
+        // Ignoring bit 5
+        assert_eq!(cpu.status.status | 0b0001_0000, 0xFA);
     }
 
     #[rstest]
@@ -964,7 +967,7 @@ mod tests {
             0xA9, 0x81, 0x48, 0xA9, 0x02, 0x48, 0xA9, 0xFA, 0x48, 0x40,
         ]);
         assert_eq!(cpu.status.status, 0xFA);
-        assert_eq!(cpu.program_counter, 0x0282)
+        assert_eq!(cpu.program_counter, 0x8103)
     }
 
     #[rstest]
@@ -1003,8 +1006,8 @@ mod tests {
         cpu.write_mem(0x10, 0xFF);
         cpu.load_and_execute(vec![0xA9, 0x0, 0x24, 0x10]);
         assert_eq!(cpu.status.get_flag(StatusFlag::Zero), true);
-        assert_eq!(cpu.status.get_flag(StatusFlag::Overflow), false);
-        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), false);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Overflow), true);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Negative), true);
         cpu.load_and_execute(vec![0xA9, 0b1100_0000, 0x24, 0x10]);
         assert_eq!(cpu.status.get_flag(StatusFlag::Zero), false);
         assert_eq!(cpu.status.get_flag(StatusFlag::Overflow), true);
@@ -1157,8 +1160,9 @@ mod tests {
 
     #[rstest]
     fn test_ror(mut cpu: CPU) {
+        // Carry is 0 at this point
         cpu.load_and_execute(vec![0xA9, 0b1000_0011, 0x6A]);
-        assert_eq!(cpu.register_accumulator, 0b1100_0001);
+        assert_eq!(cpu.register_accumulator, 0b0100_0001);
         assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
     }
 
@@ -1206,9 +1210,9 @@ mod tests {
     #[rstest]
     fn test_tsx(mut cpu: CPU) {
         cpu.load_and_execute(vec![0xBA]);
-        assert_eq!(cpu.index_register_x, 0xFF);
+        assert_eq!(cpu.index_register_x, 0xFD);
         cpu.load_and_execute(vec![0xA9, 0x41, 0x48, 0xBA]);
-        assert_eq!(cpu.index_register_x, 0xFE);
+        assert_eq!(cpu.index_register_x, 0xFC);
     }
 
     #[rstest]

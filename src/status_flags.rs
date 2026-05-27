@@ -95,6 +95,6 @@ mod tests {
     fn test_set_flag() {
         let mut p = ProcessorStatus::new();
         p.set_flag(StatusFlag::Carry, true);
-        assert_eq!(p.status, 0b0010_0001);
+        assert_eq!(p.status, 0b0010_0101);
     }
 }
