@@ -367,7 +367,16 @@ impl CPU {
                 opcode_dump[1],
                 self.read_mem(opcode_dump[1] as u16)
             ),
-            AddressingMode::ZeroPage_X => format!("${:02X},X", opcode_dump[1]),
+            AddressingMode::ZeroPage_X => match opcode.label {
+                "LDY" | "STY" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LDA" | "STA"
+                | "LSR" | "ASL" | "ROR" | "ROL" | "INC" | "DEC" => {
+                    let param = self.read_mem(self.program_counter);
+                    let addr = self.index_register_x.wrapping_add(param) as u16;
+                    let value = self.read_mem(addr);
+                    format!("${:02X},X @ {:02X} = {:02X}", opcode_dump[1], addr, value)
+                }
+                _ => format!("${:02X},X", opcode_dump[1]),
+            },
             AddressingMode::ZeroPage_Y => format!("${:02X},Y", opcode_dump[1]),
             AddressingMode::Absolute => {
                 let memory_address = u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]);
@@ -388,14 +397,42 @@ impl CPU {
                     _ => format!("${:04X}", memory_address),
                 }
             }
-            AddressingMode::Absolute_X => format!(
-                "${:04X},X",
-                u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])
-            ),
-            AddressingMode::Absolute_Y => format!(
-                "${:04X},Y",
-                u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])
-            ),
+            AddressingMode::Absolute_X => match opcode.label {
+                "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" => {
+                    let param = self.read_mem_u16(self.program_counter);
+                    let addr = param.wrapping_add(self.index_register_x as u16);
+                    let value = self.read_mem(addr);
+
+                    format!(
+                        "${:04X},X @ {:04X} = {:02X}",
+                        u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]),
+                        addr,
+                        value
+                    )
+                }
+                _ => format!(
+                    "${:04X},X",
+                    u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])
+                ),
+            },
+            AddressingMode::Absolute_Y => match opcode.label {
+                "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" => {
+                    let param = self.read_mem_u16(self.program_counter);
+                    let addr = param.wrapping_add(self.index_register_y as u16);
+                    let value = self.read_mem(addr);
+
+                    format!(
+                        "${:04X},Y @ {:04X} = {:02X}",
+                        u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]),
+                        addr,
+                        value
+                    )
+                }
+                _ => format!(
+                    "${:04X},Y",
+                    u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])
+                ),
+            },
             AddressingMode::Indirect_X => match opcode.label {
                 "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" => {
                     let param = self.read_mem(self.program_counter);
