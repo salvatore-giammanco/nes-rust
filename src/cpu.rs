@@ -301,9 +301,13 @@ impl CPU {
 
     pub fn ror(&mut self, value: u8) -> u8 {
         let first_bit = value & 0b0000_0001;
+        let current_carry: u8 = match self.status.get_flag(StatusFlag::Carry) {
+            true => 0b0000_0001,
+            false => 0b0000_0000,
+        };
         let carry = first_bit.count_ones() != 0;
         self.status.set_flag(StatusFlag::Carry, carry);
-        (value >> 1) | (carry as u8).reverse_bits()
+        (value >> 1) | current_carry.reverse_bits()
     }
 
     pub fn branch(&mut self, condition: bool) {
@@ -634,16 +638,16 @@ impl CPU {
                     match opcode.addressing_mode {
                         AddressingMode::NoneAddressing => {
                             self.register_accumulator = self.ror(self.register_accumulator);
+                            self.status.update_zero_and_negative_registers(self.register_accumulator);
                         }
                         _ => {
                             let addr = self.get_operand_address(&opcode.addressing_mode);
                             let value = self.read_mem(addr);
                             let result = self.ror(value);
                             self.write_mem(addr, result);
+                            self.status.update_zero_and_negative_registers(result);
                         }
                     }
-                    self.status
-                        .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "RTI" => {
                     // Return From Interrupt
