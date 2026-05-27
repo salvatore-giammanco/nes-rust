@@ -372,11 +372,15 @@ impl CPU {
             AddressingMode::Absolute => {
                 let memory_address = u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]);
                 match opcode.label {
-                    "STX" | "LDX" | "LDA" => format!(
-                        "${:04X} = {:02X}",
-                        memory_address,
-                        self.read_mem_u16(memory_address) as u8
-                    ),
+                    "STX" | "LDX" | "LDA" | "LDY" | "STY" | "BIT" | "ORA" | "AND" | "EOR"
+                    | "ADC" | "CMP" | "SBC" | "CPX" | "CPY" | "LSR" | "ASL" | "ROR" | "ROL"
+                    | "INC" | "DEC" => {
+                        format!(
+                            "${:04X} = {:02X}",
+                            memory_address,
+                            self.read_mem_u16(memory_address) as u8
+                        )
+                    }
                     "STA" => {
                         let current_content = self.read_mem(memory_address);
                         format!("${:04X} = {:02X}", memory_address, current_content)
