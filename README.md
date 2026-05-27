@@ -31,6 +31,14 @@ Install SDL2 library and configure Rust bindings with this [simple guide](https:
 cargo run snake_test
 ```
 
+## Git hooks
+
+```shell
+git config core.hooksPath .githooks
+```
+
+Runs `cargo fmt --check` and `cargo test` on every commit.
+
 ### Nestest ROM
 ```shell
 DEBUG=1 cargo run nestest

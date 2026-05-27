@@ -7,5 +7,5 @@
 - [x] Complete the `debug_cpu_status` function
 - [x] Debug and fix CPU (comparing nestest outputs)
 - [x] Fix CPU tests
-- [ ] Add hit hooks fro tests and fmt
+- [x] Add git hooks fro tests and fmt
 - [ ] Add CPU illegal operations

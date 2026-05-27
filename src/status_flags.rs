@@ -7,8 +7,8 @@ pub enum StatusFlag {
     Decimal,          // Bit 3
     B,                // Bit 4
     // Bit 5 (always set to 1)
-    Overflow,         // Bit 6
-    Negative,         // Bit 7
+    Overflow, // Bit 6
+    Negative, // Bit 7
 }
 
 pub struct FlagMask {
