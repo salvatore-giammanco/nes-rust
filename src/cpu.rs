@@ -440,6 +440,22 @@ impl CPU {
                         format!("${:04X}", value)
                     }
                     "LSR" | "ASL" | "ROR" | "ROL" => "A".to_string(),
+                    "JMP" => {
+                        // Indirect
+                        let addr = self.read_mem_u16(self.program_counter);
+
+                        let indirect_ref = if addr & 0x00FF == 0x00FF {
+                            // 6502 page boundary bug
+                            // https://www.nesdev.org/obelisk-6502-guide/reference.html#JMP
+                            let little = self.read_mem(addr);
+                            let big = self.read_mem(addr & 0xFF00);
+                            u16::from_le_bytes([little, big])
+                        } else {
+                            self.read_mem_u16(addr)
+                        };
+
+                        format!("(${:04X}) = {:04X}", addr, indirect_ref)
+                    }
                     _ => "".parse().unwrap(),
                 }
             }
