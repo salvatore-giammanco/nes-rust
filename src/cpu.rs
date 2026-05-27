@@ -559,25 +559,6 @@ impl CPU {
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
                 }
-                "AAC" => {
-                    // AND + Set Carry if result is negative
-                    let addr = self.get_operand_address(&opcode.addressing_mode);
-                    let value: u8 = self.read_mem(addr);
-                    self.register_accumulator = self.register_accumulator.bitand(value);
-                    self.status
-                        .update_zero_and_negative_registers(self.register_accumulator);
-                    self.status.set_flag(
-                        StatusFlag::Carry,
-                        self.register_accumulator & 0b1000_0000 != 0,
-                    )
-                }
-                "SAX" => {
-                    // M = X AND  - N,Z
-                    let addr = self.get_operand_address(&opcode.addressing_mode);
-                    let result = self.register_accumulator.bitand(self.index_register_x);
-                    self.write_mem(addr, result);
-                    // from nestest.logs seems like SAX doesn't have to update N,Z
-                }
                 "ASL" => {
                     // Arithmetic Shift Left
                     match opcode.addressing_mode {
@@ -689,14 +670,6 @@ impl CPU {
                     // Load Accumulator
                     self.lda(&opcode.addressing_mode);
                     // lda already updates registers
-                }
-                "LAX" => {
-                    // Load A and X with M
-                    let addr = self.get_operand_address(&opcode.addressing_mode);
-                    let value = self.read_mem(addr);
-                    self.register_accumulator = value;
-                    self.index_register_x = value;
-                    self.status.update_zero_and_negative_registers(value);
                 }
                 "LDX" => {
                     // Load X Register
@@ -847,7 +820,34 @@ impl CPU {
                     self.stack_pointer = self.index_register_x;
                 }
                 "TYA" => self.load_accumulator(self.index_register_y),
-
+                // Illegal opcodes
+                "AAC" => {
+                    // AND + Set Carry if result is negative
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value: u8 = self.read_mem(addr);
+                    self.register_accumulator = self.register_accumulator.bitand(value);
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
+                    self.status.set_flag(
+                        StatusFlag::Carry,
+                        self.register_accumulator & 0b1000_0000 != 0,
+                    )
+                }
+                "SAX" => {
+                    // M = X AND  - N,Z
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let result = self.register_accumulator.bitand(self.index_register_x);
+                    self.write_mem(addr, result);
+                    // from nestest.logs seems like SAX doesn't have to update N,Z
+                }
+                "LAX" => {
+                    // Load A and X with M
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    self.register_accumulator = value;
+                    self.index_register_x = value;
+                    self.status.update_zero_and_negative_registers(value);
+                }
                 _ => todo!(),
             }
 
