@@ -374,7 +374,7 @@ impl CPU {
             ),
             AddressingMode::ZeroPage_X => match opcode.label {
                 "LDY" | "STY" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LDA" | "STA"
-                | "LSR" | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" => {
+                | "LSR" | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" | "DCP" => {
                     let param = self.read_mem(self.program_counter);
                     let addr = self.index_register_x.wrapping_add(param) as u16;
                     let value = self.read_mem(addr);
@@ -396,7 +396,7 @@ impl CPU {
                 match opcode.label {
                     "STX" | "LDX" | "LDA" | "LDY" | "STY" | "BIT" | "ORA" | "AND" | "EOR"
                     | "ADC" | "CMP" | "SBC" | "CPX" | "CPY" | "LSR" | "ASL" | "ROR" | "ROL"
-                    | "INC" | "DEC" | "NOP" | "LAX" | "SAX" => {
+                    | "INC" | "DEC" | "NOP" | "LAX" | "SAX" | "DCP" => {
                         format!(
                             "${:04X} = {:02X}",
                             memory_address,
@@ -412,7 +412,7 @@ impl CPU {
             }
             AddressingMode::Absolute_X => match opcode.label {
                 "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDY" | "LSR"
-                | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" => {
+                | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" | "DCP" => {
                     let param = self.read_mem_u16(self.program_counter);
                     let addr = param.wrapping_add(self.index_register_x as u16);
                     let value = self.read_mem(addr);
@@ -430,7 +430,8 @@ impl CPU {
                 ),
             },
             AddressingMode::Absolute_Y => match opcode.label {
-                "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDX" | "LAX" => {
+                "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDX" | "LAX"
+                | "DCP" => {
                     let param = self.read_mem_u16(self.program_counter);
                     let addr = param.wrapping_add(self.index_register_y as u16);
                     let value = self.read_mem(addr);
@@ -448,7 +449,8 @@ impl CPU {
                 ),
             },
             AddressingMode::Indirect_X => match opcode.label {
-                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" | "SAX" => {
+                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" | "SAX"
+                | "DCP" => {
                     let param = self.read_mem(self.program_counter);
                     let addr: u8 = param.wrapping_add(self.index_register_x);
                     let little: u8 = self.read_mem(addr as u16);
@@ -463,7 +465,7 @@ impl CPU {
                 _ => format!("(${:02X},X)", opcode_dump[1]),
             },
             AddressingMode::Indirect_Y => match opcode.label {
-                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" => {
+                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" | "DCP" => {
                     let param = self.read_mem(self.program_counter);
                     let little: u8 = self.read_mem(param as u16);
                     let big: u8 = self.read_mem(param.wrapping_add(1) as u16);
@@ -847,6 +849,15 @@ impl CPU {
                     self.register_accumulator = value;
                     self.index_register_x = value;
                     self.status.update_zero_and_negative_registers(value);
+                }
+                "DCP" => {
+                    // {addr} = {addr} - 1 A cmp {addr}
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let old_value = self.read_mem(addr);
+                    let new_value = old_value.wrapping_sub(1);
+                    self.write_mem(addr, new_value);
+
+                    self.compare(&opcode.addressing_mode, self.register_accumulator)
                 }
                 _ => todo!(),
             }

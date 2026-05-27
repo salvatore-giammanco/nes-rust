@@ -5,7 +5,7 @@
 - [ ] ATX / LXA - AND then A -> X (`$AB`)
 - [ ] AXA / SHA - A & X & 7 -> mem (`$9F`, `$93`)
 - [ ] AXS / SBX - X & A, then subtract (`$CB`)
-- [ ] DCP / DCM - DEC mem then CMP (`$C7`, `$D7`, `$CF`, `$DF`, `$DB`, `$C3`, `$D3`)
+- [x] DCP / DCM - DEC mem then CMP (`$C7`, `$D7`, `$CF`, `$DF`, `$DB`, `$C3`, `$D3`)
 - [x] DOP / SKB - 2-byte NOP (`$04`, `$14`, `$34`, `$44`, `$54`, `$64`, `$74`, `$80`, `$82`, `$89`, `$C2`, `$D4`, `$E2`, `$F4`)
 - [ ] ISC / ISB - INC mem then SBC (`$E7`, `$F7`, `$EF`, `$FF`, `$FB`, `$E3`, `$F3`)
 - [ ] KIL / JAM - lock up (`$02`, `$12`, `$22`, `$32`, `$42`, `$52`, `$62`, `$72`, `$92`, `$B2`, `$D2`, `$F2`)
