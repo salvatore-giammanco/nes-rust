@@ -479,16 +479,17 @@ impl CPU {
                     match opcode.addressing_mode {
                         AddressingMode::NoneAddressing => {
                             self.register_accumulator = self.asl(self.register_accumulator);
+                            self.status
+                                .update_zero_and_negative_registers(self.register_accumulator);
                         }
                         _ => {
                             let addr = self.get_operand_address(&opcode.addressing_mode);
                             let value = self.read_mem(addr);
                             let result = self.asl(value);
                             self.write_mem(addr, result);
+                            self.status.update_zero_and_negative_registers(result);
                         }
                     }
-                    self.status
-                        .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "BCC" => self.branch(!self.status.get_flag(StatusFlag::Carry)),
                 "BCS" => self.branch(self.status.get_flag(StatusFlag::Carry)),
@@ -583,6 +584,7 @@ impl CPU {
                 "LDA" => {
                     // Load Accumulator
                     self.lda(&opcode.addressing_mode);
+                    // lda already updates registers
                 }
                 "LDX" => {
                     // Load X Register
@@ -603,16 +605,17 @@ impl CPU {
                     match opcode.addressing_mode {
                         AddressingMode::NoneAddressing => {
                             self.register_accumulator = self.lsr(self.register_accumulator);
+                            self.status
+                                .update_zero_and_negative_registers(self.register_accumulator);
                         }
                         _ => {
                             let addr = self.get_operand_address(&opcode.addressing_mode);
                             let value = self.read_mem(addr);
                             let result = self.lsr(value);
                             self.write_mem(addr, result);
+                            self.status.update_zero_and_negative_registers(result);
                         }
                     }
-                    self.status
-                        .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "NOP" => {}
                 "ORA" => {
@@ -650,16 +653,17 @@ impl CPU {
                     match opcode.addressing_mode {
                         AddressingMode::NoneAddressing => {
                             self.register_accumulator = self.rol(self.register_accumulator);
+                            self.status
+                                .update_zero_and_negative_registers(self.register_accumulator);
                         }
                         _ => {
                             let addr = self.get_operand_address(&opcode.addressing_mode);
                             let value = self.read_mem(addr);
                             let result = self.rol(value);
                             self.write_mem(addr, result);
+                            self.status.update_zero_and_negative_registers(result);
                         }
                     }
-                    self.status
-                        .update_zero_and_negative_registers(self.register_accumulator);
                 }
                 "ROR" => {
                     // Rotate Right
