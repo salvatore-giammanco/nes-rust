@@ -216,6 +216,14 @@ lazy_static! {
         OpCode::new_illegal(0xD4, "NOP", 2, 4, AddressingMode::ZeroPage_X),
         OpCode::new_illegal(0xE2, "NOP", 2, 2, AddressingMode::Immediate),
         OpCode::new_illegal(0xF4, "NOP", 2, 4, AddressingMode::ZeroPage_X),
+        //TOPs - Triple NOP
+        OpCode::new_illegal(0x0C, "NOP", 3, 4, AddressingMode::Absolute),
+        OpCode::new_illegal(0x1C, "NOP", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new_illegal(0x3C, "NOP", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new_illegal(0x5C, "NOP", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new_illegal(0x7C, "NOP", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new_illegal(0xDC, "NOP", 3, 4, AddressingMode::Absolute_X),
+        OpCode::new_illegal(0xFC, "NOP", 3, 4, AddressingMode::Absolute_X),
     ];
 
     pub static ref CPU_OPCODES_MAP: HashMap<u8, &'static OpCode> = {

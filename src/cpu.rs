@@ -374,7 +374,7 @@ impl CPU {
             ),
             AddressingMode::ZeroPage_X => match opcode.label {
                 "LDY" | "STY" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LDA" | "STA"
-                | "LSR" | "ASL" | "ROR" | "ROL" | "INC" | "DEC" => {
+                | "LSR" | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" => {
                     let param = self.read_mem(self.program_counter);
                     let addr = self.index_register_x.wrapping_add(param) as u16;
                     let value = self.read_mem(addr);
@@ -396,7 +396,7 @@ impl CPU {
                 match opcode.label {
                     "STX" | "LDX" | "LDA" | "LDY" | "STY" | "BIT" | "ORA" | "AND" | "EOR"
                     | "ADC" | "CMP" | "SBC" | "CPX" | "CPY" | "LSR" | "ASL" | "ROR" | "ROL"
-                    | "INC" | "DEC" => {
+                    | "INC" | "DEC" | "NOP" => {
                         format!(
                             "${:04X} = {:02X}",
                             memory_address,
@@ -412,7 +412,7 @@ impl CPU {
             }
             AddressingMode::Absolute_X => match opcode.label {
                 "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDY" | "LSR"
-                | "ASL" | "ROR" | "ROL" | "INC" | "DEC" => {
+                | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" => {
                     let param = self.read_mem_u16(self.program_counter);
                     let addr = param.wrapping_add(self.index_register_x as u16);
                     let value = self.read_mem(addr);
