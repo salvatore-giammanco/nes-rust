@@ -201,6 +201,13 @@ lazy_static! {
         OpCode::new(0x9A, "TXS", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0x98, "TYA", 1, 2, AddressingMode::NoneAddressing),
         // Illegal / undocumented operations
+        //NOPs
+        OpCode::new_illegal(0x1A, "NOP", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new_illegal(0x3A, "NOP", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new_illegal(0x5A, "NOP", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new_illegal(0x7A, "NOP", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new_illegal(0xDA, "NOP", 1, 2, AddressingMode::NoneAddressing),
+        OpCode::new_illegal(0xFA, "NOP", 1, 2, AddressingMode::NoneAddressing),
         //DOPs - Double NOP
         OpCode::new_illegal(0x04, "NOP", 2, 3, AddressingMode::ZeroPage),
         OpCode::new_illegal(0x14, "NOP", 2, 4, AddressingMode::ZeroPage_X),
