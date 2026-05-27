@@ -204,6 +204,11 @@ lazy_static! {
         //AAC
         OpCode::new_illegal(0x0b, "AAC", 2, 2, AddressingMode::Immediate),
         OpCode::new_illegal(0x2b, "AAC", 2, 2, AddressingMode::Immediate),
+        // AAX
+        OpCode::new_illegal(0x87, "AAX", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new_illegal(0x97, "AAX", 2, 4, AddressingMode::ZeroPage_Y),
+        OpCode::new_illegal(0x83, "AAX", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new_illegal(0x8F, "AAX", 3, 4, AddressingMode::Absolute),
         //NOPs
         OpCode::new_illegal(0x1A, "NOP", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new_illegal(0x3A, "NOP", 1, 2, AddressingMode::NoneAddressing),

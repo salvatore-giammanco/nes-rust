@@ -1,5 +1,5 @@
 - [x] AAC / ANC - AND, set C if result negative (`$0B`, `$2B`)
-- [ ] AAX / SAX - A & X -> mem (`$87`, `$97`, `$83`, `$8F`)
+- [x] AAX / SAX - A & X -> mem (`$87`, `$97`, `$83`, `$8F`)
 - [ ] ARR - AND then ROR, set C/V from bits 5/6 (`$6B`)
 - [ ] ASR / ALR - AND then LSR (`$4B`)
 - [ ] ATX / LXA - AND then A -> X (`$AB`)

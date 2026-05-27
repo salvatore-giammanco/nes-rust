@@ -571,6 +571,13 @@ impl CPU {
                         self.register_accumulator & 0b1000_0000 != 0,
                     )
                 }
+                "AAX" => {
+                    // M = X AND  - N,Z
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let result = self.register_accumulator.bitand(self.index_register_x);
+                    self.write_mem(addr, result);
+                    self.status.update_zero_and_negative_registers(result);
+                }
                 "ASL" => {
                     // Arithmetic Shift Left
                     match opcode.addressing_mode {
@@ -998,6 +1005,12 @@ mod tests {
     fn test_aac(mut cpu: CPU) {
         cpu.load_and_execute(vec![0xA9, 0xFF, 0x29, 0b0110_1001]);
         assert_eq!(cpu.register_accumulator, 0b0110_1001)
+    }
+
+    #[rstest]
+    fn test_aax(mut cpu: CPU) {
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0xA2, 0xF0, 0x8F, 0x10, 0x00]);
+        assert_eq!(cpu.read_mem(0x10), 0xF0)
     }
 
     #[rstest]
