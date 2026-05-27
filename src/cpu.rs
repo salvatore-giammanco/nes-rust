@@ -2,10 +2,9 @@ use std::collections::HashMap;
 use std::env;
 use std::ops::{BitAnd, BitOr, BitXor};
 
+use crate::bus::Bus;
 use crate::opcodes::{self, OpCode};
 use crate::status_flags::{ProcessorStatus, StatusFlag};
-use crate::bus::Bus;
-
 
 const STACK: u16 = 0x100;
 pub const STACK_RESET: u8 = 0xFD;
@@ -96,7 +95,6 @@ impl CPU {
         }
     }
 
-
     pub fn load_test(&mut self, program: Vec<u8>) {
         for i in 0..(program.len() as u16) {
             self.write_mem(0x0600 + i, program[i as usize]);
@@ -109,7 +107,9 @@ impl CPU {
         let mut pos: usize = 0;
         while pos < program.len() {
             let addr = 0x600 + pos;
-            let opcode = opcodes.get(&program[pos]).expect(&format!("Unknown opcode {:x}", pos));
+            let opcode = opcodes
+                .get(&program[pos])
+                .expect(&format!("Unknown opcode {:x}", pos));
             let mut args: Vec<u8> = Vec::new();
             if opcode.bytes > 1 {
                 for i in 1..(opcode.bytes) {
@@ -119,11 +119,7 @@ impl CPU {
             pos += opcode.bytes as usize;
             println!(
                 "{:#04X}| {:#04X}: {:?} ({:02X?}) - {:?}",
-                addr,
-                opcode.opcode,
-                opcode.label,
-                args,
-                opcode.addressing_mode
+                addr, opcode.opcode, opcode.label, args, opcode.addressing_mode
             );
         }
     }
@@ -313,7 +309,8 @@ impl CPU {
     pub fn branch(&mut self, condition: bool) {
         if condition {
             let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
-            self.program_counter = self.program_counter
+            self.program_counter = self
+                .program_counter
                 .wrapping_add(1)
                 .wrapping_add(relative_displacement as u16);
         }
@@ -365,19 +362,51 @@ impl CPU {
 
         let assembly: String = match opcode.addressing_mode {
             AddressingMode::Immediate => format!("#${:02X}", opcode_dump[1]),
-            AddressingMode::ZeroPage => format!("${:02X} = {:02X}", opcode_dump[1], self.read_mem(opcode_dump[1] as u16)),
+            AddressingMode::ZeroPage => format!(
+                "${:02X} = {:02X}",
+                opcode_dump[1],
+                self.read_mem(opcode_dump[1] as u16)
+            ),
             AddressingMode::ZeroPage_X => format!("${:02X},X", opcode_dump[1]),
             AddressingMode::ZeroPage_Y => format!("${:02X},Y", opcode_dump[1]),
             AddressingMode::Absolute => {
                 let memory_address = u16::from_le_bytes([opcode_dump[1], opcode_dump[2]]);
                 match opcode.label {
-                    "STX" | "LDX" | "LDA" => format!("${:04X} = {:02X}", memory_address, self.read_mem_u16(memory_address) as u8),
-                    _ => format!("${:04X}", memory_address)
+                    "STX" | "LDX" | "LDA" => format!(
+                        "${:04X} = {:02X}",
+                        memory_address,
+                        self.read_mem_u16(memory_address) as u8
+                    ),
+                    "STA" => {
+                        let current_content = self.read_mem(memory_address);
+                        format!("${:04X} = {:02X}", memory_address, current_content)
+                    }
+                    _ => format!("${:04X}", memory_address),
                 }
+            }
+            AddressingMode::Absolute_X => format!(
+                "${:04X},X",
+                u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])
+            ),
+            AddressingMode::Absolute_Y => format!(
+                "${:04X},Y",
+                u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])
+            ),
+            AddressingMode::Indirect_X => match opcode.label {
+                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" => {
+                    let param = self.read_mem(self.program_counter);
+                    let addr: u8 = param.wrapping_add(self.index_register_x);
+                    let little: u8 = self.read_mem(addr as u16);
+                    let big: u8 = self.read_mem(addr.wrapping_add(1) as u16);
+                    let ptr = u16::from_le_bytes([little, big]);
+                    let value = self.read_mem(ptr);
+                    format!(
+                        "(${:02X},X) @ {:02X} = {:04X} = {:02X}",
+                        opcode_dump[1], addr, ptr, value
+                    )
+                }
+                _ => format!("(${:02X},X)", opcode_dump[1]),
             },
-            AddressingMode::Absolute_X => format!("${:04X},X", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
-            AddressingMode::Absolute_Y => format!("${:04X},Y", u16::from_le_bytes([opcode_dump[1], opcode_dump[2]])),
-            AddressingMode::Indirect_X => format!("(${:02X},X)", opcode_dump[1]),
             AddressingMode::Indirect_Y => format!("(${:02X}),Y", opcode_dump[1]),
             AddressingMode::NoneAddressing => {
                 match opcode.label {
@@ -386,17 +415,16 @@ impl CPU {
                         // not care about here) to a location which is the result of adding the
                         // relative displacement to the program counter
                         let relative_displacement: i8 = self.read_mem(self.program_counter) as i8;
-                        let value = self.program_counter
+                        let value = self
+                            .program_counter
                             .wrapping_add(1)
                             .wrapping_add(relative_displacement as u16);
                         format!("${:04X}", value)
-                    },
-                    "LSR" | "ASL" | "ROR" | "ROL" => {
-                      "A".to_string()
-                    },
-                    _ => "".parse().unwrap()
+                    }
+                    "LSR" | "ASL" | "ROR" | "ROL" => "A".to_string(),
+                    _ => "".parse().unwrap(),
                 }
-            },
+            }
         };
 
         let space_padding_assembly = " ".repeat(28 - assembly.len());
@@ -638,7 +666,8 @@ impl CPU {
                     match opcode.addressing_mode {
                         AddressingMode::NoneAddressing => {
                             self.register_accumulator = self.ror(self.register_accumulator);
-                            self.status.update_zero_and_negative_registers(self.register_accumulator);
+                            self.status
+                                .update_zero_and_negative_registers(self.register_accumulator);
                         }
                         _ => {
                             let addr = self.get_operand_address(&opcode.addressing_mode);
@@ -693,13 +722,14 @@ impl CPU {
                 "TSX" => {
                     // Transfer Stack Pointer to X
                     self.index_register_x = self.stack_pointer;
-                    self.status.update_zero_and_negative_registers(self.stack_pointer);
-                },
+                    self.status
+                        .update_zero_and_negative_registers(self.stack_pointer);
+                }
                 "TXA" => self.load_accumulator(self.index_register_x),
                 "TXS" => {
                     // Transfer X to Stack Pointer
                     self.stack_pointer = self.index_register_x;
-                },
+                }
                 "TYA" => self.load_accumulator(self.index_register_y),
 
                 _ => todo!(),
@@ -714,17 +744,16 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::rom::ROM;
     use rstest::*;
-    use super::*;
 
     #[fixture]
-    pub fn cpu() -> CPU { 
+    pub fn cpu() -> CPU {
         let bus = Bus::new(ROM::empty());
         let cpu = CPU::new(bus);
         cpu
     }
-
 
     #[rstest]
     fn test_0xa9_lda_immediate_load(mut cpu: CPU) {
