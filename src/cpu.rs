@@ -411,7 +411,21 @@ impl CPU {
                 }
                 _ => format!("(${:02X},X)", opcode_dump[1]),
             },
-            AddressingMode::Indirect_Y => format!("(${:02X}),Y", opcode_dump[1]),
+            AddressingMode::Indirect_Y => match opcode.label {
+                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" => {
+                    let param = self.read_mem(self.program_counter);
+                    let little: u8 = self.read_mem(param as u16);
+                    let big: u8 = self.read_mem(param.wrapping_add(1) as u16);
+                    let deref_base: u16 = u16::from_le_bytes([little, big]);
+                    let ptr = deref_base.wrapping_add(self.index_register_y as u16);
+                    let value = self.read_mem(ptr);
+                    format!(
+                        "(${:02X}),Y = {:04X} @ {:04X} = {:02X}",
+                        opcode_dump[1], deref_base, ptr, value
+                    )
+                }
+                _ => format!("(${:02X}),Y", opcode_dump[1]),
+            },
             AddressingMode::NoneAddressing => {
                 match opcode.label {
                     "BCS" | "BCC" | "BEQ" | "BNE" | "BVS" | "BVC" | "BPL" | "BMI" => {
