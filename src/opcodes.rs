@@ -209,6 +209,8 @@ lazy_static! {
         OpCode::new_illegal(0x97, "SAX", 2, 4, AddressingMode::ZeroPage_Y),
         OpCode::new_illegal(0x83, "SAX", 2, 6, AddressingMode::Indirect_X),
         OpCode::new_illegal(0x8F, "SAX", 3, 4, AddressingMode::Absolute),
+        // SBC
+        OpCode::new_illegal(0xEB, "SBC", 2, 2, AddressingMode::Immediate),
         // LAX
         OpCode::new_illegal(0xA7, "LAX", 2, 3, AddressingMode::ZeroPage),
         OpCode::new_illegal(0xB7, "LAX", 2, 4, AddressingMode::ZeroPage_Y),
