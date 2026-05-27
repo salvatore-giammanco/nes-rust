@@ -7,6 +7,7 @@ pub struct OpCode {
     pub bytes: u8,
     pub cycles: u16,
     pub addressing_mode: AddressingMode,
+    pub illegal: bool,
 }
 
 impl OpCode {
@@ -23,6 +24,24 @@ impl OpCode {
             bytes,
             cycles,
             addressing_mode,
+            illegal: false,
+        }
+    }
+
+    fn new_illegal(
+        opcode: u8,
+        label: &'static str,
+        bytes: u8,
+        cycles: u16,
+        addressing_mode: AddressingMode,
+    ) -> Self {
+        Self {
+            opcode,
+            label,
+            bytes,
+            cycles,
+            addressing_mode,
+            illegal: true,
         }
     }
 }
@@ -181,6 +200,22 @@ lazy_static! {
         OpCode::new(0x8A, "TXA", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0x9A, "TXS", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0x98, "TYA", 1, 2, AddressingMode::NoneAddressing),
+        // Illegal / undocumented operations
+        //DOPs - Double NOP
+        OpCode::new_illegal(0x04, "NOP", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new_illegal(0x14, "NOP", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new_illegal(0x34, "NOP", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new_illegal(0x44, "NOP", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new_illegal(0x54, "NOP", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new_illegal(0x64, "NOP", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new_illegal(0x74, "NOP", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new_illegal(0x80, "NOP", 2, 2, AddressingMode::Immediate),
+        OpCode::new_illegal(0x82, "NOP", 2, 2, AddressingMode::Immediate),
+        OpCode::new_illegal(0x89, "NOP", 2, 2, AddressingMode::Immediate),
+        OpCode::new_illegal(0xC2, "NOP", 2, 2, AddressingMode::Immediate),
+        OpCode::new_illegal(0xD4, "NOP", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new_illegal(0xE2, "NOP", 2, 2, AddressingMode::Immediate),
+        OpCode::new_illegal(0xF4, "NOP", 2, 4, AddressingMode::ZeroPage_X),
     ];
 
     pub static ref CPU_OPCODES_MAP: HashMap<u8, &'static OpCode> = {

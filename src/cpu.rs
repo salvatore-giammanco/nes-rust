@@ -358,7 +358,12 @@ impl CPU {
             .collect::<Vec<String>>()
             .join(" ");
 
-        let space_padding_dump = " ".repeat(10 - opcode_dump_str.len());
+        let space_padding_dump: String;
+        if opcode.illegal {
+            space_padding_dump = format!("{}{}", " ".repeat(9 - opcode_dump_str.len()), "*");
+        } else {
+            space_padding_dump = " ".repeat(10 - opcode_dump_str.len());
+        }
 
         let assembly: String = match opcode.addressing_mode {
             AddressingMode::Immediate => format!("#${:02X}", opcode_dump[1]),
