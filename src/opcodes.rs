@@ -205,10 +205,17 @@ lazy_static! {
         OpCode::new_illegal(0x0b, "AAC", 2, 2, AddressingMode::Immediate),
         OpCode::new_illegal(0x2b, "AAC", 2, 2, AddressingMode::Immediate),
         // AAX
-        OpCode::new_illegal(0x87, "AAX", 2, 3, AddressingMode::ZeroPage),
-        OpCode::new_illegal(0x97, "AAX", 2, 4, AddressingMode::ZeroPage_Y),
-        OpCode::new_illegal(0x83, "AAX", 2, 6, AddressingMode::Indirect_X),
-        OpCode::new_illegal(0x8F, "AAX", 3, 4, AddressingMode::Absolute),
+        OpCode::new_illegal(0x87, "SAX", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new_illegal(0x97, "SAX", 2, 4, AddressingMode::ZeroPage_Y),
+        OpCode::new_illegal(0x83, "SAX", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new_illegal(0x8F, "SAX", 3, 4, AddressingMode::Absolute),
+        // LAX
+        OpCode::new_illegal(0xA7, "LAX", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new_illegal(0xB7, "LAX", 2, 4, AddressingMode::ZeroPage_Y),
+        OpCode::new_illegal(0xAF, "LAX", 3, 4, AddressingMode::Absolute),
+        OpCode::new_illegal(0xBF, "LAX", 3, 4, AddressingMode::Absolute_Y),
+        OpCode::new_illegal(0xA3, "LAX", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new_illegal(0xB3, "LAX", 2, 5, AddressingMode::Indirect_Y),
         //NOPs
         OpCode::new_illegal(0x1A, "NOP", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new_illegal(0x3A, "NOP", 1, 2, AddressingMode::NoneAddressing),

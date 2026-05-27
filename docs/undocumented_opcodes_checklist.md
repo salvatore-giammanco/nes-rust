@@ -10,7 +10,7 @@
 - [ ] ISC / ISB - INC mem then SBC (`$E7`, `$F7`, `$EF`, `$FF`, `$FB`, `$E3`, `$F3`)
 - [ ] KIL / JAM - lock up (`$02`, `$12`, `$22`, `$32`, `$42`, `$52`, `$62`, `$72`, `$92`, `$B2`, `$D2`, `$F2`)
 - [ ] LAR / LAE - SP & mem -> A,X,SP (`$BB`)
-- [ ] LAX - mem -> A,X (`$A7`, `$B7`, `$AF`, `$BF`, `$A3`, `$B3`)
+- [x] LAX - mem -> A,X (`$A7`, `$B7`, `$AF`, `$BF`, `$A3`, `$B3`)
 - [x] NOP - 1-byte (`$1A`, `$3A`, `$5A`, `$7A`, `$DA`, `$FA`)
 - [ ] RLA - ROL mem then AND (`$27`, `$37`, `$2F`, `$3F`, `$3B`, `$23`, `$33`)
 - [ ] RRA - ROR mem then ADC (`$67`, `$77`, `$6F`, `$7F`, `$7B`, `$63`, `$73`)

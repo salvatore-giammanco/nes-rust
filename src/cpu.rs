@@ -383,7 +383,7 @@ impl CPU {
                 _ => format!("${:02X},X", opcode_dump[1]),
             },
             AddressingMode::ZeroPage_Y => match opcode.label {
-                "LDX" | "STX" | "LDY" => {
+                "LDX" | "STX" | "LDY" | "LAX" | "SAX" => {
                     let param = self.read_mem(self.program_counter);
                     let addr = self.index_register_y.wrapping_add(param) as u16;
                     let value = self.read_mem(addr);
@@ -396,7 +396,7 @@ impl CPU {
                 match opcode.label {
                     "STX" | "LDX" | "LDA" | "LDY" | "STY" | "BIT" | "ORA" | "AND" | "EOR"
                     | "ADC" | "CMP" | "SBC" | "CPX" | "CPY" | "LSR" | "ASL" | "ROR" | "ROL"
-                    | "INC" | "DEC" | "NOP" => {
+                    | "INC" | "DEC" | "NOP" | "LAX" | "SAX" => {
                         format!(
                             "${:04X} = {:02X}",
                             memory_address,
@@ -430,7 +430,7 @@ impl CPU {
                 ),
             },
             AddressingMode::Absolute_Y => match opcode.label {
-                "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDX" => {
+                "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDX" | "LAX" => {
                     let param = self.read_mem_u16(self.program_counter);
                     let addr = param.wrapping_add(self.index_register_y as u16);
                     let value = self.read_mem(addr);
@@ -448,7 +448,7 @@ impl CPU {
                 ),
             },
             AddressingMode::Indirect_X => match opcode.label {
-                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" => {
+                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" | "SAX" => {
                     let param = self.read_mem(self.program_counter);
                     let addr: u8 = param.wrapping_add(self.index_register_x);
                     let little: u8 = self.read_mem(addr as u16);
@@ -463,7 +463,7 @@ impl CPU {
                 _ => format!("(${:02X},X)", opcode_dump[1]),
             },
             AddressingMode::Indirect_Y => match opcode.label {
-                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" => {
+                "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" => {
                     let param = self.read_mem(self.program_counter);
                     let little: u8 = self.read_mem(param as u16);
                     let big: u8 = self.read_mem(param.wrapping_add(1) as u16);
@@ -571,12 +571,12 @@ impl CPU {
                         self.register_accumulator & 0b1000_0000 != 0,
                     )
                 }
-                "AAX" => {
+                "SAX" => {
                     // M = X AND  - N,Z
                     let addr = self.get_operand_address(&opcode.addressing_mode);
                     let result = self.register_accumulator.bitand(self.index_register_x);
                     self.write_mem(addr, result);
-                    self.status.update_zero_and_negative_registers(result);
+                    // from nestest.logs seems like SAX doesn't have to update N,Z
                 }
                 "ASL" => {
                     // Arithmetic Shift Left
@@ -689,6 +689,14 @@ impl CPU {
                     // Load Accumulator
                     self.lda(&opcode.addressing_mode);
                     // lda already updates registers
+                }
+                "LAX" => {
+                    // Load A and X with M
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+                    self.register_accumulator = value;
+                    self.index_register_x = value;
+                    self.status.update_zero_and_negative_registers(value);
                 }
                 "LDX" => {
                     // Load X Register
@@ -905,6 +913,15 @@ mod tests {
     }
 
     #[rstest]
+    fn test_lax_from_memory(mut cpu: CPU) {
+        cpu.write_mem(0x10, 0x55);
+        cpu.load_and_execute(vec![0xAF, 0x10, 0x00]);
+
+        assert_eq!(cpu.register_accumulator, 0x55);
+        assert_eq!(cpu.index_register_x, 0x55);
+    }
+
+    #[rstest]
     fn test_sta(mut cpu: CPU) {
         cpu.load_and_execute(vec![0xa9, 0x42, 0x85, 0x10]);
         assert_eq!(cpu.read_mem(0x10), 0x42);
@@ -1008,7 +1025,7 @@ mod tests {
     }
 
     #[rstest]
-    fn test_aax(mut cpu: CPU) {
+    fn test_sax(mut cpu: CPU) {
         cpu.load_and_execute(vec![0xA9, 0xFF, 0xA2, 0xF0, 0x8F, 0x10, 0x00]);
         assert_eq!(cpu.read_mem(0x10), 0xF0)
     }
