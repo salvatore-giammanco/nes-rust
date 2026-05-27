@@ -6,3 +6,6 @@
   - create running abstractions first (possibility to overwrite program counter at startup)
 - [x] Complete the `debug_cpu_status` function
 - [x] Debug and fix CPU (comparing nestest outputs)
+- [ ] Fix CPU tests
+- [ ] Add hit hooks fro tests and fmt
+- [ ] Add CPU illegal operations
