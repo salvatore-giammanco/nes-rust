@@ -559,6 +559,18 @@ impl CPU {
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
                 }
+                "AAC" => {
+                    // AND + Set Carry if result is negative
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value: u8 = self.read_mem(addr);
+                    self.register_accumulator = self.register_accumulator.bitand(value);
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
+                    self.status.set_flag(
+                        StatusFlag::Carry,
+                        self.register_accumulator & 0b1000_0000 != 0,
+                    )
+                }
                 "ASL" => {
                     // Arithmetic Shift Left
                     match opcode.addressing_mode {
@@ -972,11 +984,18 @@ mod tests {
             0xA9, 0x81, 0x48, 0xA9, 0x02, 0x48, 0xA9, 0xFA, 0x48, 0x40,
         ]);
         assert_eq!(cpu.status.status, 0xFA);
-        assert_eq!(cpu.program_counter, 0x8103)
+        assert_eq!(cpu.program_counter, 0x8103);
     }
 
     #[rstest]
     fn test_and(mut cpu: CPU) {
+        cpu.load_and_execute(vec![0xA9, 0xFF, 0x0b, 0b1110_1001]);
+        assert_eq!(cpu.register_accumulator, 0b1110_1001);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
+    }
+
+    #[rstest]
+    fn test_aac(mut cpu: CPU) {
         cpu.load_and_execute(vec![0xA9, 0xFF, 0x29, 0b0110_1001]);
         assert_eq!(cpu.register_accumulator, 0b0110_1001)
     }

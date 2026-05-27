@@ -201,6 +201,9 @@ lazy_static! {
         OpCode::new(0x9A, "TXS", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new(0x98, "TYA", 1, 2, AddressingMode::NoneAddressing),
         // Illegal / undocumented operations
+        //AAC
+        OpCode::new_illegal(0x0b, "AAC", 2, 2, AddressingMode::Immediate),
+        OpCode::new_illegal(0x2b, "AAC", 2, 2, AddressingMode::Immediate),
         //NOPs
         OpCode::new_illegal(0x1A, "NOP", 1, 2, AddressingMode::NoneAddressing),
         OpCode::new_illegal(0x3A, "NOP", 1, 2, AddressingMode::NoneAddressing),
