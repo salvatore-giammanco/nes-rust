@@ -290,9 +290,10 @@ impl CPU {
 
     pub fn rol(&mut self, value: u8) -> u8 {
         let last_bit = value & 0b1000_0000;
+        let current_carry = self.status.get_flag(StatusFlag::Carry);
         let carry = last_bit.count_ones() != 0;
         self.status.set_flag(StatusFlag::Carry, carry);
-        (value << 1) | carry as u8
+        (value << 1) | current_carry as u8
     }
 
     pub fn ror(&mut self, value: u8) -> u8 {
@@ -374,7 +375,8 @@ impl CPU {
             ),
             AddressingMode::ZeroPage_X => match opcode.label {
                 "LDY" | "STY" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LDA" | "STA"
-                | "LSR" | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" | "DCP" | "ISB" | "SLO" => {
+                | "LSR" | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" | "DCP" | "ISB" | "SLO"
+                | "RLA" => {
                     let param = self.read_mem(self.program_counter);
                     let addr = self.index_register_x.wrapping_add(param) as u16;
                     let value = self.read_mem(addr);
@@ -396,7 +398,7 @@ impl CPU {
                 match opcode.label {
                     "STX" | "LDX" | "LDA" | "LDY" | "STY" | "BIT" | "ORA" | "AND" | "EOR"
                     | "ADC" | "CMP" | "SBC" | "CPX" | "CPY" | "LSR" | "ASL" | "ROR" | "ROL"
-                    | "INC" | "DEC" | "NOP" | "LAX" | "SAX" | "DCP" | "ISB" | "SLO" => {
+                    | "INC" | "DEC" | "NOP" | "LAX" | "SAX" | "DCP" | "ISB" | "SLO" | "RLA" => {
                         format!(
                             "${:04X} = {:02X}",
                             memory_address,
@@ -412,7 +414,7 @@ impl CPU {
             }
             AddressingMode::Absolute_X => match opcode.label {
                 "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDY" | "LSR"
-                | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" | "DCP" | "ISB" | "SLO" => {
+                | "ASL" | "ROR" | "ROL" | "INC" | "DEC" | "NOP" | "DCP" | "ISB" | "SLO" | "RLA" => {
                     let param = self.read_mem_u16(self.program_counter);
                     let addr = param.wrapping_add(self.index_register_x as u16);
                     let value = self.read_mem(addr);
@@ -431,7 +433,7 @@ impl CPU {
             },
             AddressingMode::Absolute_Y => match opcode.label {
                 "LDA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "STA" | "LDX" | "LAX"
-                | "DCP" | "ISB" | "SLO" => {
+                | "DCP" | "ISB" | "SLO" | "RLA" => {
                     let param = self.read_mem_u16(self.program_counter);
                     let addr = param.wrapping_add(self.index_register_y as u16);
                     let value = self.read_mem(addr);
@@ -450,7 +452,7 @@ impl CPU {
             },
             AddressingMode::Indirect_X => match opcode.label {
                 "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" | "SAX"
-                | "DCP" | "ISB" | "SLO" => {
+                | "DCP" | "ISB" | "SLO" | "RLA" => {
                     let param = self.read_mem(self.program_counter);
                     let addr: u8 = param.wrapping_add(self.index_register_x);
                     let little: u8 = self.read_mem(addr as u16);
@@ -466,7 +468,7 @@ impl CPU {
             },
             AddressingMode::Indirect_Y => match opcode.label {
                 "LDA" | "STA" | "ORA" | "AND" | "EOR" | "ADC" | "CMP" | "SBC" | "LAX" | "DCP"
-                | "ISB" | "SLO" => {
+                | "ISB" | "SLO" | "RLA" => {
                     let param = self.read_mem(self.program_counter);
                     let little: u8 = self.read_mem(param as u16);
                     let big: u8 = self.read_mem(param.wrapping_add(1) as u16);
@@ -871,14 +873,26 @@ impl CPU {
                 "SLO" => {
                     let addr = self.get_operand_address(&opcode.addressing_mode);
                     let value = self.read_mem(addr);
-                    let result: u8;
 
                     // Arithmetic Shift Left
-                    result = self.asl(value);
+                    let result = self.asl(value);
                     self.write_mem(addr, result);
 
                     // M OR A
                     self.register_accumulator = result.bitor(self.register_accumulator);
+                    self.status
+                        .update_zero_and_negative_registers(self.register_accumulator);
+                }
+                "RLA" => {
+                    let addr = self.get_operand_address(&opcode.addressing_mode);
+                    let value = self.read_mem(addr);
+
+                    // Rotate left
+                    let result = self.rol(value);
+                    self.write_mem(addr, result);
+
+                    // M AND A
+                    self.register_accumulator = result.bitand(self.register_accumulator);
                     self.status
                         .update_zero_and_negative_registers(self.register_accumulator);
                 }
@@ -1241,9 +1255,14 @@ mod tests {
 
     #[rstest]
     fn test_rol(mut cpu: CPU) {
+        // With carry = 0
         cpu.load_and_execute(vec![0xA9, 0b1000_0010, 0x2A]);
-        assert_eq!(cpu.register_accumulator, 0b_0000_0101);
+        assert_eq!(cpu.register_accumulator, 0b_0000_0100);
         assert_eq!(cpu.status.get_flag(StatusFlag::Carry), true);
+        // With carry = 1
+        cpu.load_and_execute(vec![0xA9, 0b1000_0010, 0x2A, 0xA9, 0b0000_0010, 0x2A]);
+        assert_eq!(cpu.register_accumulator, 0b_0000_0101);
+        assert_eq!(cpu.status.get_flag(StatusFlag::Carry), false);
     }
 
     #[rstest]
