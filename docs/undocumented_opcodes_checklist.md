@@ -16,7 +16,7 @@
 - [ ] RRA - ROR mem then ADC (`$67`, `$77`, `$6F`, `$7F`, `$7B`, `$63`, `$73`)
 - [x] SBC - duplicate of `$E9` (`$EB`)
 - [x] SLO / ASO - ASL mem then ORA (`$07`, `$17`, `$0F`, `$1F`, `$1B`, `$03`, `$13`)
-- [ ] SRE / LSE - LSR mem then EOR (`$47`, `$57`, `$4F`, `$5F`, `$5B`, `$43`, `$53`)
+- [x] SRE / LSE - LSR mem then EOR (`$47`, `$57`, `$4F`, `$5F`, `$5B`, `$43`, `$53`)
 - [ ] SXA / SHX - X & (high addr + 1) -> mem (`$9E`)
 - [ ] SYA / SHY - Y & (high addr + 1) -> mem (`$9C`)
 - [x] TOP / SKW - 3-byte NOP (`$0C`, `$1C`, `$3C`, `$5C`, `$7C`, `$DC`, `$FC`)
