@@ -13,7 +13,7 @@
 - [x] LAX - mem -> A,X (`$A7`, `$B7`, `$AF`, `$BF`, `$A3`, `$B3`)
 - [x] NOP - 1-byte (`$1A`, `$3A`, `$5A`, `$7A`, `$DA`, `$FA`)
 - [x] RLA - ROL mem then AND (`$27`, `$37`, `$2F`, `$3F`, `$3B`, `$23`, `$33`)
-- [ ] RRA - ROR mem then ADC (`$67`, `$77`, `$6F`, `$7F`, `$7B`, `$63`, `$73`)
+- [x] RRA - ROR mem then ADC (`$67`, `$77`, `$6F`, `$7F`, `$7B`, `$63`, `$73`)
 - [x] SBC - duplicate of `$E9` (`$EB`)
 - [x] SLO / ASO - ASL mem then ORA (`$07`, `$17`, `$0F`, `$1F`, `$1B`, `$03`, `$13`)
 - [x] SRE / LSE - LSR mem then EOR (`$47`, `$57`, `$4F`, `$5F`, `$5B`, `$43`, `$53`)

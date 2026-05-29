@@ -288,6 +288,14 @@ lazy_static! {
         OpCode::new_illegal(0x5B, "SRE", 3, 7, AddressingMode::Absolute_Y),
         OpCode::new_illegal(0x43, "SRE", 2, 8, AddressingMode::Indirect_X),
         OpCode::new_illegal(0x53, "SRE", 2, 8, AddressingMode::Indirect_Y),
+        // RRA
+        OpCode::new_illegal(0x67, "RRA", 2, 5, AddressingMode::ZeroPage),
+        OpCode::new_illegal(0x77, "RRA", 2, 6, AddressingMode::ZeroPage_X),
+        OpCode::new_illegal(0x6F, "RRA", 3, 6, AddressingMode::Absolute),
+        OpCode::new_illegal(0x7F, "RRA", 3, 7, AddressingMode::Absolute_X),
+        OpCode::new_illegal(0x7B, "RRA", 3, 7, AddressingMode::Absolute_Y),
+        OpCode::new_illegal(0x63, "RRA", 2, 8, AddressingMode::Indirect_X),
+        OpCode::new_illegal(0x73, "RRA", 2, 8, AddressingMode::Indirect_Y),
     ];
 
     pub static ref CPU_OPCODES_MAP: HashMap<u8, &'static OpCode> = {
