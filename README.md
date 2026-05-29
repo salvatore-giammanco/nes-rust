@@ -4,6 +4,9 @@
 [![Open Source Saturday Italy](https://img.shields.io/badge/Open%20Source%20Saturday-Italy-red)](https://oss-italy.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![Made by Human](https://madebyhuman.iamjarl.com/badges/made-white.svg)](https://madebyhuman.iamjarl.com)
+
+
 
 
 This is my version of the NES emulator written in Rust.
