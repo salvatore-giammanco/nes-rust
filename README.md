@@ -4,9 +4,7 @@
 [![Open Source Saturday Italy](https://img.shields.io/badge/Open%20Source%20Saturday-Italy-red)](https://oss-italy.github.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[![Made by Human](https://madebyhuman.iamjarl.com/badges/made-white.svg)](https://madebyhuman.iamjarl.com)
-
-
+[![Crafted by Human](https://madebyhuman.iamjarl.com/badges/crafted-white.svg)](https://madebyhuman.iamjarl.com)
 
 
 This is my version of the NES emulator written in Rust.
@@ -15,9 +13,9 @@ This is my version of the NES emulator written in Rust.
 
 | module  | progress |
 |---------|----------|
-| CPU     | 98%      |
-| BUS     | 40%      |
-| ROM     | 0%       |
+| CPU     | 85%      |
+| BUS     | 80%      |
+| ROM     | 100%     |
 | PPU     | 0%       |
 | GamePad | 0%       |
 | APU     | 0%       |
@@ -26,18 +24,18 @@ This is my version of the NES emulator written in Rust.
 
 Install SDL2 library and configure Rust bindings with this [simple guide](https://github.com/Rust-SDL2/rust-sdl2).
 
+## Git hooks
+
+```shell
+git config core.hooksPath .githooks
+```
+
 ## Testing ROMs
 
 ### Snake test ROM
 
 ```shell
 cargo run snake_test
-```
-
-## Git hooks
-
-```shell
-git config core.hooksPath .githooks
 ```
 
 Runs `cargo fmt --check` and `cargo test` on every commit.
