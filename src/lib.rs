@@ -7,3 +7,5 @@ pub mod opcodes;
 pub mod ppu;
 pub mod rom;
 mod status_flags;
+
+mod control_register;
