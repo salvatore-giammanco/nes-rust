@@ -1,4 +1,5 @@
 use crate::cpu::Mem;
+use crate::ppu::BitFlags;
 use crate::ppu::PPU;
 use crate::rom::ROM;
 

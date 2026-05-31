@@ -1,3 +1,5 @@
+use super::bitflags::BitFlags;
+use super::bitflags::FlagMask;
 pub enum ControlFlags {
     NameTable1,
     NameTable2,
@@ -13,16 +15,7 @@ pub struct ControlRegister {
     pub status: u8,
 }
 
-pub struct FlagMask {
-    set: u8,
-    unset: u8,
-}
-
 impl ControlRegister {
-    pub fn new() -> Self {
-        Self { status: 0 }
-    }
-
     pub fn get_vram_address_increment(&self) -> u8 {
         if self.get_flag(ControlFlags::VramAddIncrement) {
             32
@@ -30,7 +23,12 @@ impl ControlRegister {
             1
         }
     }
+}
 
+impl BitFlags<ControlFlags> for ControlRegister {
+    fn new() -> Self {
+        Self { status: 0 }
+    }
     fn get_mask(&self, flag: ControlFlags) -> FlagMask {
         match flag {
             ControlFlags::NameTable1 => FlagMask {
@@ -68,20 +66,11 @@ impl ControlRegister {
         }
     }
 
-    pub fn set_flag(&mut self, flag: ControlFlags, bit: bool) {
-        match bit {
-            true => self.status = self.status | self.get_mask(flag).set,
-            false => self.status = self.status & self.get_mask(flag).unset,
-        }
+    fn get_status(&self) -> u8 {
+        self.status
     }
 
-    pub fn set_from_byte(&mut self, byte: u8) {
-        // Force bit 5 (hardwired) to 1
-        self.status = byte | 0b0010_0000;
-    }
-
-    pub fn get_flag(&self, flag: ControlFlags) -> bool {
-        let check = self.get_mask(flag).set & self.status;
-        check.count_ones() != 0
+    fn set_from_byte(&mut self, byte: u8) {
+        self.status = byte;
     }
 }
