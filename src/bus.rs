@@ -1,4 +1,5 @@
 use crate::cpu::Mem;
+use crate::ppu::PPU;
 use crate::rom::ROM;
 
 const RAM: u16 = 0x0000;
@@ -10,13 +11,16 @@ const ROM_START_IN_MEMORY: u16 = 0x8000;
 pub struct Bus {
     cpu_vram: [u8; 0xFFFF],
     rom: Option<ROM>,
+    ppu: PPU,
 }
 
 impl Bus {
     pub fn new(rom: ROM) -> Self {
+        let ppu = PPU::new(rom.chr_rom.clone(), rom.screen_mirroring.clone());
         Self {
             cpu_vram: [0; 0xFFFF],
             rom: Some(rom),
+            ppu,
         }
     }
 
@@ -26,13 +30,17 @@ impl Bus {
 }
 
 impl Mem for Bus {
-    fn read_mem(&self, addr: u16) -> u8 {
+    fn read_mem(&mut self, addr: u16) -> u8 {
         match addr {
             RAM..=RAM_MIRRORS_END => {
                 let mirror_down_addr = addr & 0x07FF;
                 self.cpu_vram[mirror_down_addr as usize]
             }
-            PPU_REGISTERS..=PPU_REGISTERS_MIRRORS_END => {
+            0x2000 | 0x2001 | 0x2003 | 0x2005 | 0x2006 | 0x4014 => {
+                panic!("Attempt to read from write-only PPU address {:x}", addr);
+            }
+            0x2007 => self.ppu.read_data(),
+            0x2008..=PPU_REGISTERS_MIRRORS_END => {
                 let _mirror_down_addr = addr & 0x2007;
                 println!("PPU register read at {:#X}", addr);
                 todo!("PPU is not supported yet - read")
@@ -60,7 +68,10 @@ impl Mem for Bus {
                 let mirror_down_addr = addr & 0x07FF;
                 self.cpu_vram[mirror_down_addr as usize] = data;
             }
-            PPU_REGISTERS..=PPU_REGISTERS_MIRRORS_END => {
+            0x2000 => self.ppu.control.set_from_byte(data),
+            0x2006 => self.ppu.write_to_ppu_address(data),
+            0x2007 => self.ppu.write_data(data),
+            0x2008..=PPU_REGISTERS_MIRRORS_END => {
                 let _mirror_down_addr = addr & 0x2007;
                 println!("PPU register write at {:#X}", addr);
                 todo!("PPU is not supported yet - write")

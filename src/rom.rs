@@ -3,7 +3,7 @@ const PRG_ROM_PAGE_SIZE: usize = 16384;
 const CHR_ROM_PAGE_SIZE: usize = 8192;
 const TRAINER_SIZE: usize = 512;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Mirroring {
     Vertical,
     Horizontal,
@@ -12,9 +12,9 @@ pub enum Mirroring {
 
 #[derive(Debug, PartialEq)]
 pub struct ROM {
-    trainer: bool,
-    mapper: u8,
-    screen_mirroring: Mirroring,
+    pub trainer: bool,
+    pub mapper: u8,
+    pub screen_mirroring: Mirroring,
     pub prg_rom: Vec<u8>,
     pub chr_rom: Vec<u8>,
 }

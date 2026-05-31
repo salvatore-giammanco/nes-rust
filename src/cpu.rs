@@ -38,9 +38,9 @@ pub enum AddressingMode {
 }
 
 pub trait Mem {
-    fn read_mem(&self, addr: u16) -> u8;
+    fn read_mem(&mut self, addr: u16) -> u8;
 
-    fn read_mem_u16(&self, addr: u16) -> u16 {
+    fn read_mem_u16(&mut self, addr: u16) -> u16 {
         // Reading 2 bytes in little endian
         let little = self.read_mem(addr);
         let big = self.read_mem(addr + 1);
@@ -59,11 +59,11 @@ pub trait Mem {
 }
 
 impl Mem for CPU {
-    fn read_mem(&self, addr: u16) -> u8 {
+    fn read_mem(&mut self, addr: u16) -> u8 {
         self.bus.read_mem(addr)
     }
 
-    fn read_mem_u16(&self, addr: u16) -> u16 {
+    fn read_mem_u16(&mut self, addr: u16) -> u16 {
         self.bus.read_mem_u16(addr)
     }
 
@@ -152,7 +152,7 @@ impl CPU {
         self.execute();
     }
 
-    pub fn fetch(&self) -> u8 {
+    pub fn fetch(&mut self) -> u8 {
         self.read_mem(self.program_counter)
     }
 
@@ -187,7 +187,7 @@ impl CPU {
         u16::from_le_bytes([pcl, pch])
     }
 
-    pub fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
+    pub fn get_operand_address(&mut self, mode: &AddressingMode) -> u16 {
         match mode {
             AddressingMode::Immediate => self.program_counter,
             AddressingMode::ZeroPage => self.read_mem(self.program_counter) as u16,
@@ -342,7 +342,7 @@ impl CPU {
         self.execute_with_callback(|_| {});
     }
 
-    pub fn debug_cpu_status(&self, opcode: &OpCode) {
+    pub fn debug_cpu_status(&mut self, opcode: &OpCode) {
         if !self.debug {
             return;
         }
