@@ -1,5 +1,6 @@
 use crate::control_register::ControlRegister;
 use crate::rom::Mirroring;
+use sdl2::touch::touch_device;
 
 pub struct AddressRegister {
     value: (u8, u8),
@@ -56,6 +57,7 @@ pub struct PPU {
     pub mirroring: Mirroring,
     pub address: AddressRegister,
     pub control: ControlRegister,
+    pub internal_data_buffer: u8,
 }
 
 impl PPU {
@@ -68,9 +70,86 @@ impl PPU {
             mirroring,
             address: AddressRegister::new(),
             control: ControlRegister::new(),
+            internal_data_buffer: 0,
         }
     }
     fn write_to_ppu_address(&mut self, value: u8) {
         self.address.update(value);
+    }
+
+    fn increment_vram_address(&mut self) {
+        self.address
+            .increment(self.control.get_vram_address_increment());
+    }
+
+    fn read_data(&mut self) -> u8 {
+        let addr = self.address.get();
+        self.increment_vram_address();
+
+        match addr {
+            0..=0x1FFF => {
+                let result = self.internal_data_buffer;
+                self.internal_data_buffer = self.chr_rom[addr as usize];
+                result
+            }
+            0x2000..=0x2FFF => {
+                let result = self.internal_data_buffer;
+                self.internal_data_buffer = self.vram[self.mirror_vram_address(addr) as usize];
+                result
+            }
+            0x3000..=0x3EFF => panic!(
+                "Address space 0x3000..0x3EFF is not expected to be used, requested = {:02X}",
+                addr
+            ),
+            0x3F00..=0x3FFF => self.palette_table[(addr - 0x3F00) as usize],
+            _ => panic!("Unexpected access to mirrored space {:04X}", addr),
+        }
+    }
+
+    fn write_data(&mut self, data: u8) {
+        let addr = self.address.get();
+        self.increment_vram_address();
+
+        match addr {
+            0..=0x1FFF => {
+                panic!("Attempt to write on CHR ROM at address {:04}", addr);
+            }
+            0x2000..=0x2FFF => {
+                self.vram[self.mirror_vram_address(addr) as usize] = data;
+            }
+            0x3000..=0x3EFF => panic!(
+                "Address space 0x3000..0x3EFF is not expected to be used, requested = {:02X}",
+                addr
+            ),
+            0x3F00..=0x3FFF => self.palette_table[(addr - 0x3F00) as usize] = data,
+            _ => panic!("Unexpected access to mirrored space {:04X}", addr),
+        }
+    }
+
+    fn mirror_vram_address(&self, addr: u16) -> u16 {
+        // Horizontal:
+        //   [ A ] [ a ]
+        //   [ B ] [ b ]
+
+        // Vertical:
+        //   [ A ] [ B ]
+        //   [ a ] [ b ]
+
+        let mirrored_vram_addr = addr & 0xBFFF; // Mirror down 0x3000-0x3EFF to 0x2000 - 0x2EFF
+        let vram_index = mirrored_vram_addr - 0x2000;
+        let nametable_index = vram_index / 0x400;
+
+        match &self.mirroring {
+            Mirroring::Horizontal => match nametable_index {
+                1 | 2 => vram_index - 0x400,
+                3 => vram_index - 0x800,
+                _ => vram_index,
+            },
+            Mirroring::Vertical => match nametable_index {
+                2 | 3 => vram_index - 0x800,
+                _ => vram_index,
+            },
+            _ => vram_index,
+        }
     }
 }
