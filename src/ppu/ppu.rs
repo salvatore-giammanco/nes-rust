@@ -1,6 +1,5 @@
-use crate::control_register::ControlRegister;
+use super::control_register::ControlRegister;
 use crate::rom::Mirroring;
-use sdl2::touch::touch_device;
 
 pub struct AddressRegister {
     value: (u8, u8),
