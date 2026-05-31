@@ -1,4 +1,6 @@
 use super::control_register::ControlRegister;
+use crate::ppu::mask_register::MaskRegister;
+use crate::ppu::BitFlags;
 use crate::rom::Mirroring;
 
 pub struct AddressRegister {
@@ -56,6 +58,7 @@ pub struct PPU {
     pub mirroring: Mirroring,
     pub address: AddressRegister,
     pub control: ControlRegister,
+    pub mask: MaskRegister,
     pub internal_data_buffer: u8,
 }
 
@@ -69,6 +72,7 @@ impl PPU {
             mirroring,
             address: AddressRegister::new(),
             control: ControlRegister::new(),
+            mask: MaskRegister::new(),
             internal_data_buffer: 0,
         }
     }

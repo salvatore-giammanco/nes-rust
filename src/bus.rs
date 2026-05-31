@@ -70,6 +70,7 @@ impl Mem for Bus {
                 self.cpu_vram[mirror_down_addr as usize] = data;
             }
             0x2000 => self.ppu.control.set_from_byte(data),
+            0x2001 => self.ppu.control.set_from_byte(data),
             0x2006 => self.ppu.write_to_ppu_address(data),
             0x2007 => self.ppu.write_data(data),
             0x2008..=PPU_REGISTERS_MIRRORS_END => {
