@@ -73,6 +73,7 @@ impl Mem for Bus {
             0x2000 => self.ppu.control.set_from_byte(data),
             0x2001 => self.ppu.control.set_from_byte(data),
             0x2002 => panic!("Attempt to write on read only PPU status register ($2002)"),
+            0x2003 => self.ppu.write_to_oam_address(data),
             0x2006 => self.ppu.write_to_ppu_address(data),
             0x2007 => self.ppu.write_data(data),
             0x2008..=PPU_REGISTERS_MIRRORS_END => {

@@ -61,6 +61,7 @@ pub struct PPU {
     pub control: ControlRegister,
     pub mask: MaskRegister,
     pub status: PPUStatusRegister,
+    oam_address: u8,
     pub internal_data_buffer: u8,
 }
 
@@ -76,6 +77,7 @@ impl PPU {
             control: ControlRegister::new(),
             mask: MaskRegister::new(),
             status: PPUStatusRegister::new(),
+            oam_address: 0,
             internal_data_buffer: 0,
         }
     }
@@ -157,5 +159,10 @@ impl PPU {
             },
             _ => vram_index,
         }
+    }
+
+    pub fn write_to_oam_address(&mut self, value: u8) {
+        // TODO: Validate address?
+        self.oam_address = value;
     }
 }
