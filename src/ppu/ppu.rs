@@ -165,4 +165,13 @@ impl PPU {
         // TODO: Validate address?
         self.oam_address = value;
     }
+
+    pub fn read_oam_data(&self) -> u8 {
+        self.oam_data[self.oam_address as usize]
+    }
+
+    pub fn write_oam_data(&mut self, data: u8) {
+        self.oam_data[self.oam_address as usize] = data;
+        self.oam_address = self.oam_address.wrapping_add(1);
+    }
 }
