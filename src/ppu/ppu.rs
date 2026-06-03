@@ -9,60 +9,34 @@ pub struct AddressRegister {
     hi_ptr: bool,
 }
 
-impl AddressRegister {
-    pub fn new() -> Self {
-        AddressRegister {
-            value: (0, 0), // High byte first, lo byte second
-            hi_ptr: true,
-        }
-    }
-
-    pub fn set(&mut self, data: u16) {
-        self.value.0 = (data >> 8) as u8;
-        self.value.0 = (data & 0xFF) as u8;
-    }
-
-    pub fn get(&self) -> u16 {
-        ((self.value.0 as u16) << 8) & self.value.1 as u16
-    }
-
-    pub fn update(&mut self, data: u8) {
-        if self.hi_ptr {
-            self.value.0 = data;
-        } else {
-            self.value.1 = data;
-        }
-
-        // Mirror down addresses above 0x3FFF
-        self.set(self.get() & 0x3FFF);
-
-        self.hi_ptr = !self.hi_ptr;
-    }
-
-    pub fn increment(&mut self, inc: u8) {
-        let current = self.get();
-        let new = current.wrapping_add(inc as u16);
-
-        // Set and mirror down addresses above 0x3FFF
-        self.set(new & 0x3FFF);
-    }
-
-    pub fn reset_latch(&mut self) {
-        self.hi_ptr = true;
-    }
-}
 pub struct PPU {
     pub chr_rom: Vec<u8>,
     pub palette_table: [u8; 32],
-    pub vram: [u8; 2048],
-    pub oam_data: [u8; 256],
     pub mirroring: Mirroring,
-    pub address: AddressRegister,
-    pub control: ControlRegister,
-    pub mask: MaskRegister,
-    pub status: PPUStatusRegister,
-    oam_address: u8,
     pub internal_data_buffer: u8,
+    // write_toggle serves both address and scroll registers (shared bit) - also called latch
+    write_toggle: bool,
+
+    // Registers
+
+    // PPUCTRL
+    pub control: ControlRegister,
+    // PPUMASK
+    pub mask: MaskRegister,
+    // PPUSTATUS
+    pub status: PPUStatusRegister,
+    // OAMADDR
+    oam_address: u8,
+    // OAMDATA
+    pub oam_data: [u8; 256],
+    // PPUSCROLL
+    scroll: (u8, u8),
+    // PPUADDR
+    address: (u8, u8),
+    // PPUDATA
+    pub vram: [u8; 2048],
+    // OAMDMA
+    // ...
 }
 
 impl PPU {
@@ -73,25 +47,76 @@ impl PPU {
             oam_data: [0; 64 * 4],
             palette_table: [0; 32],
             mirroring,
-            address: AddressRegister::new(),
+            internal_data_buffer: 0,
+            address: (0, 0),
             control: ControlRegister::new(),
             mask: MaskRegister::new(),
             status: PPUStatusRegister::new(),
             oam_address: 0,
-            internal_data_buffer: 0,
+            scroll: (0, 0),
+            write_toggle: true,
         }
     }
-    pub fn write_to_ppu_address(&mut self, value: u8) {
-        self.address.update(value);
+
+    pub fn set_address_register(&mut self, data: u16) {
+        self.address.0 = (data >> 8) as u8;
+        self.address.0 = (data & 0xFF) as u8;
+    }
+
+    pub fn get_address_register(&self) -> u16 {
+        ((self.address.0 as u16) << 8) & self.address.1 as u16
+    }
+
+    pub fn update_address_register(&mut self, data: u8) {
+        if self.write_toggle {
+            self.address.0 = data;
+        } else {
+            self.address.1 = data;
+        }
+
+        // Mirror down addresses above 0x3FFF
+        self.set_address_register(self.get_address_register() & 0x3FFF);
+
+        self.write_toggle = !self.write_toggle;
+    }
+
+    pub fn increment_address_register(&mut self, inc: u8) {
+        let current = self.get_address_register();
+        let new = current.wrapping_add(inc as u16);
+
+        // Set and mirror down addresses above 0x3FFF
+        self.set_address_register(new & 0x3FFF);
+    }
+
+    pub fn set_scroll_register(&mut self, data: u16) {
+        self.scroll.0 = (data >> 8) as u8;
+        self.scroll.0 = (data & 0xFF) as u8;
+    }
+
+    pub fn get_scroll_register(&self) -> u16 {
+        ((self.scroll.0 as u16) << 8) & self.scroll.1 as u16
+    }
+
+    pub fn update_scroll_register(&mut self, data: u8) {
+        if self.write_toggle {
+            self.scroll.0 = data;
+        } else {
+            self.scroll.1 = data;
+        }
+        self.write_toggle = !self.write_toggle;
+    }
+
+    pub fn increment_scroll_register(&mut self, inc: u8) {
+        let current = self.get_scroll_register();
+        let new = current.wrapping_add(inc as u16);
     }
 
     fn increment_vram_address(&mut self) {
-        self.address
-            .increment(self.control.get_vram_address_increment());
+        self.increment_address_register(self.control.get_vram_address_increment());
     }
 
     pub fn read_data(&mut self) -> u8 {
-        let addr = self.address.get();
+        let addr = self.get_address_register();
         self.increment_vram_address();
 
         match addr {
@@ -115,7 +140,7 @@ impl PPU {
     }
 
     pub fn write_data(&mut self, data: u8) {
-        let addr = self.address.get();
+        let addr = self.get_address_register();
         self.increment_vram_address();
 
         match addr {

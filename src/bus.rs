@@ -76,7 +76,8 @@ impl Mem for Bus {
             0x2002 => panic!("Attempt to write on read only PPU status register ($2002)"),
             0x2003 => self.ppu.write_to_oam_address(data),
             0x2004 => self.ppu.write_oam_data(data),
-            0x2006 => self.ppu.write_to_ppu_address(data),
+            0x2005 => self.ppu.update_scroll_register(data),
+            0x2006 => self.ppu.update_address_register(data),
             0x2007 => self.ppu.write_data(data),
             0x2008..=PPU_REGISTERS_MIRRORS_END => {
                 let _mirror_down_addr = addr & 0x2007;
