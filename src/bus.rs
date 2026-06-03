@@ -84,6 +84,16 @@ impl Mem for Bus {
                 println!("PPU register write at {:#X}", addr);
                 todo!("PPU is not supported yet - write")
             }
+            0x4014 => {
+                let addr_start: u16 = (data as u16) << 8;
+                let addr_end = addr_start + 256;
+                let mut vram_page: [u8; 256] = [0; 256];
+
+                for i in addr_start..addr_end {
+                    vram_page[(i >> 8) as usize] = self.cpu_vram[i as usize];
+                }
+                self.ppu.oam_dma(vram_page);
+            }
             ROM_START_IN_MEMORY..=0xFFFF => {
                 // TODO: Add unsafe mode to explicitly allow writing to ROM
                 // panic!("Write to ROM at {:#X}: {:#X}", addr, data);

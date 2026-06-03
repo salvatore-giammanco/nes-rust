@@ -28,7 +28,7 @@ pub struct PPU {
     // OAMADDR
     oam_address: u8,
     // OAMDATA
-    pub oam_data: [u8; 256],
+    oam_data: [u8; 256],
     // PPUSCROLL
     scroll: (u8, u8),
     // PPUADDR
@@ -198,5 +198,9 @@ impl PPU {
     pub fn write_oam_data(&mut self, data: u8) {
         self.oam_data[self.oam_address as usize] = data;
         self.oam_address = self.oam_address.wrapping_add(1);
+    }
+
+    pub fn oam_dma(&mut self, page: [u8; 256]) {
+        self.oam_data = page;
     }
 }
