@@ -11,6 +11,29 @@ pub enum StatusFlag {
     Negative, // Bit 7
 }
 
+impl StatusFlag {
+    fn bit_pos(&self) -> u8 {
+        match self {
+            StatusFlag::Carry => 0,
+            StatusFlag::Zero => 1,
+            StatusFlag::InterruptDisable => 2,
+            StatusFlag::Decimal => 3,
+            StatusFlag::B => 4,
+            // Bit 5 always set to 1
+            StatusFlag::Overflow => 6,
+            StatusFlag::Negative => 7,
+        }
+    }
+
+    fn get_set_mask(&self) -> u8 {
+        1 << self.bit_pos()
+    }
+
+    fn get_unset_mask(&self) -> u8 {
+        !(1 << self.bit_pos())
+    }
+}
+
 pub struct FlagMask {
     set: u8,
     unset: u8,
@@ -28,35 +51,9 @@ impl ProcessorStatus {
     }
 
     fn get_mask(&self, flag: StatusFlag) -> FlagMask {
-        match flag {
-            StatusFlag::Carry => FlagMask {
-                set: 0b0000_0001,
-                unset: 0b1111_1110,
-            },
-            StatusFlag::Zero => FlagMask {
-                set: 0b0000_0010,
-                unset: 0b1111_1101,
-            },
-            StatusFlag::InterruptDisable => FlagMask {
-                set: 0b0000_0100,
-                unset: 0b1111_1011,
-            },
-            StatusFlag::Decimal => FlagMask {
-                set: 0b0000_1000,
-                unset: 0b1111_0111,
-            },
-            StatusFlag::B => FlagMask {
-                set: 0b0001_0000,
-                unset: 0b1110_1111,
-            },
-            StatusFlag::Overflow => FlagMask {
-                set: 0b0100_0000,
-                unset: 0b1011_1111,
-            },
-            StatusFlag::Negative => FlagMask {
-                set: 0b1000_0000,
-                unset: 0b0111_1111,
-            },
+        FlagMask {
+            set: flag.get_set_mask(),
+            unset: flag.get_unset_mask(),
         }
     }
 
